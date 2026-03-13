@@ -1,1417 +1,759 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  ChevronRight,
-  Globe,
-  Heart,
-  Menu,
-  School,
-  Sparkles,
-  Star,
-  Target,
-  Trophy,
-  Users,
-  X,
-  Zap,
-} from "lucide-react";
+import { ChevronRight, Menu, Play, Star, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-type PageKey = "home" | "morning" | "school" | "play" | "shopping" | "road";
-
-const MODULES: Array<{
-  key: PageKey;
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface Module {
   emoji: string;
   title: string;
-  desc: string;
+  label: string;
   color: string;
-  btn: string;
-  gradientFrom: string;
-  gradientTo: string;
-  glowColor: string;
-}> = [
+  glow: string;
+  steps: { emoji: string; text: string }[];
+}
+
+interface AgeGroup {
+  emoji: string;
+  age: string;
+  desc: string;
+  bg: string;
+  border: string;
+}
+
+interface VrScene {
+  emoji: string;
+  title: string;
+  caption: string;
+  bg: string;
+}
+
+interface GalleryItem {
+  emoji: string;
+  title: string;
+  goal: string;
+  bg: string;
+}
+
+interface Plan {
+  emoji: string;
+  name: string;
+  price: string;
+  period: string;
+  popular: boolean;
+  features: string[];
+  color: string;
+  btnColor: string;
+}
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+const MODULES: Module[] = [
   {
-    key: "morning",
-    emoji: "🌅",
+    emoji: "🦷",
     title: "Morning Routine",
-    desc: "Wake up, brush teeth, get dressed!",
-    color: "bg-amber-100",
-    btn: "bg-amber-400 hover:bg-amber-500",
-    gradientFrom: "oklch(0.92 0.16 88)",
-    gradientTo: "oklch(0.82 0.18 60)",
-    glowColor: "rgba(251, 191, 36, 0.4)",
+    label: "Wash, brush, dress!",
+    color: "from-sky-200 to-blue-300",
+    glow: "hover:shadow-blue-300/60",
+    steps: [
+      { emoji: "💧", text: "Turn on the tap and wet your hands" },
+      { emoji: "🧼", text: "Apply soap and rub for 20 seconds" },
+      { emoji: "🦷", text: "Brush teeth for 2 minutes" },
+      { emoji: "👕", text: "Pick clothes and get dressed" },
+    ],
   },
   {
-    key: "school",
-    emoji: "📚",
+    emoji: "🏫",
     title: "School Skills",
-    desc: "Reading, writing & classroom fun!",
-    color: "bg-sky-100",
-    btn: "bg-sky-400 hover:bg-sky-500",
-    gradientFrom: "oklch(0.88 0.14 230)",
-    gradientTo: "oklch(0.72 0.18 250)",
-    glowColor: "rgba(56, 189, 248, 0.4)",
+    label: "Learn & grow together",
+    color: "from-violet-200 to-purple-300",
+    glow: "hover:shadow-purple-300/60",
+    steps: [
+      { emoji: "🎒", text: "Pack your school bag" },
+      { emoji: "✏️", text: "Write your name on your book" },
+      { emoji: "🙋", text: "Raise your hand to answer" },
+      { emoji: "🤝", text: "Say hello to your classmates" },
+    ],
   },
   {
-    key: "play",
-    emoji: "🎮",
-    title: "Play & Social",
-    desc: "Making friends & playing together!",
-    color: "bg-purple-100",
-    btn: "bg-purple-400 hover:bg-purple-500",
-    gradientFrom: "oklch(0.88 0.12 290)",
-    gradientTo: "oklch(0.7 0.22 300)",
-    glowColor: "rgba(192, 132, 252, 0.4)",
+    emoji: "🤝",
+    title: "Play & Social Skills",
+    label: "Friends & fun!",
+    color: "from-pink-200 to-rose-300",
+    glow: "hover:shadow-pink-300/60",
+    steps: [
+      { emoji: "👋", text: "Walk up and say hi" },
+      { emoji: "🎮", text: "Ask if you can play together" },
+      { emoji: "😊", text: "Take turns and share" },
+      { emoji: "🥳", text: "Celebrate with your new friend" },
+    ],
   },
   {
-    key: "shopping",
     emoji: "🛒",
     title: "Shopping Practice",
-    desc: "Pick items, count coins & pay!",
-    color: "bg-green-100",
-    btn: "bg-green-400 hover:bg-green-500",
-    gradientFrom: "oklch(0.9 0.14 155)",
-    gradientTo: "oklch(0.72 0.2 145)",
-    glowColor: "rgba(74, 222, 128, 0.4)",
+    label: "Pick, pay, go!",
+    color: "from-orange-200 to-amber-300",
+    glow: "hover:shadow-orange-300/60",
+    steps: [
+      { emoji: "📝", text: "Read the shopping list" },
+      { emoji: "🛒", text: "Find items on the shelf" },
+      { emoji: "💰", text: "Count your money" },
+      { emoji: "🛍️", text: "Pay and collect your bag" },
+    ],
   },
   {
-    key: "road",
     emoji: "🚦",
     title: "Road Safety",
-    desc: "Cross safely & know the signals!",
-    color: "bg-red-100",
-    btn: "bg-red-400 hover:bg-red-500",
-    gradientFrom: "oklch(0.88 0.12 25)",
-    gradientTo: "oklch(0.7 0.22 20)",
-    glowColor: "rgba(248, 113, 113, 0.4)",
-  },
-];
-
-const ACTIVITY_DATA: Record<
-  Exclude<PageKey, "home">,
-  {
-    steps: Array<{ emoji: string; title: string; desc: string }>;
-    badges: Array<{ emoji: string; label: string; color: string }>;
-  }
-> = {
-  morning: {
+    label: "Stay safe always",
+    color: "from-emerald-200 to-green-300",
+    glow: "hover:shadow-green-300/60",
     steps: [
-      {
-        emoji: "⏰",
-        title: "Wake Up!",
-        desc: "Stretch your arms, open your eyes, and say Good Morning to start your amazing day!",
-      },
-      {
-        emoji: "🚿",
-        title: "Wash Your Face",
-        desc: "Splash cool water on your face, grab your towel, and feel fresh and clean!",
-      },
-      {
-        emoji: "🪥",
-        title: "Brush Teeth",
-        desc: "Squeeze the toothpaste, brush in circles for 2 minutes, and show off your shiny smile!",
-      },
-      {
-        emoji: "👕",
-        title: "Get Dressed",
-        desc: "Pick your favourite outfit, put on your socks and shoes, and you're ready to shine!",
-      },
-      {
-        emoji: "🥣",
-        title: "Eat Breakfast",
-        desc: "Sit at the table, enjoy your yummy breakfast, and get all the energy you need!",
-      },
-    ],
-    badges: [
-      {
-        emoji: "⭐",
-        label: "Star Learner",
-        color: "bg-amber-100 text-amber-800",
-      },
-      {
-        emoji: "💪",
-        label: "Strong Skills",
-        color: "bg-orange-100 text-orange-800",
-      },
-      {
-        emoji: "🏆",
-        label: "Morning Champion",
-        color: "bg-yellow-100 text-yellow-800",
-      },
-    ],
-  },
-  school: {
-    steps: [
-      {
-        emoji: "🎒",
-        title: "Pack Your Bag",
-        desc: "Check your list — books, pencils, lunchbox — everything goes in your backpack!",
-      },
-      {
-        emoji: "👋",
-        title: "Greet Your Teacher",
-        desc: "Walk in with a big smile, say Good Morning, and find your seat happily!",
-      },
-      {
-        emoji: "🪑",
-        title: "Sit and Listen",
-        desc: "Sit up straight, eyes on the teacher, and soak up all the amazing things you'll learn!",
-      },
-      {
-        emoji: "📖",
-        title: "Read Together",
-        desc: "Follow along with your finger, sound out the words, and discover the story inside!",
-      },
-      {
-        emoji: "🖐️",
-        title: "Show Your Work",
-        desc: "Hold up your paper proudly — you did it! Let everyone see how brilliant you are!",
-      },
-    ],
-    badges: [
-      { emoji: "📚", label: "Bookworm", color: "bg-sky-100 text-sky-800" },
-      { emoji: "✏️", label: "Super Writer", color: "bg-blue-100 text-blue-800" },
-      {
-        emoji: "🏆",
-        label: "Class Star",
-        color: "bg-indigo-100 text-indigo-800",
-      },
-    ],
-  },
-  play: {
-    steps: [
-      {
-        emoji: "😊",
-        title: "Say Hello!",
-        desc: "Walk up with a friendly wave, introduce yourself, and make someone's day brighter!",
-      },
-      {
-        emoji: "🔄",
-        title: "Take Turns",
-        desc: "Wait for your turn, watch your friend play, then jump in when it's your time to shine!",
-      },
-      {
-        emoji: "🧸",
-        title: "Share Your Toys",
-        desc: "Offer your favourite toy to a friend — sharing makes playing twice as fun!",
-      },
-      {
-        emoji: "🎲",
-        title: "Play a Game Together",
-        desc: "Pick a game, explain the rules, and enjoy the laughter — win or lose, you're a winner!",
-      },
-      {
-        emoji: "👋",
-        title: "Say Goodbye",
-        desc: 'Wave goodbye with a big smile and say "See you tomorrow!" — friendships last forever!',
-      },
-    ],
-    badges: [
-      {
-        emoji: "🤝",
-        label: "Best Friend",
-        color: "bg-purple-100 text-purple-800",
-      },
-      { emoji: "😄", label: "Joy Maker", color: "bg-pink-100 text-pink-800" },
-      {
-        emoji: "🏆",
-        label: "Social Star",
-        color: "bg-violet-100 text-violet-800",
-      },
-    ],
-  },
-  shopping: {
-    steps: [
-      {
-        emoji: "📝",
-        title: "Make a List",
-        desc: "Write down or draw the things you need — milk, bread, apples — your shopping adventure starts here!",
-      },
-      {
-        emoji: "🔍",
-        title: "Find the Items",
-        desc: "Walk through the aisles, look at the labels, and find each item on your list one by one!",
-      },
-      {
-        emoji: "🛒",
-        title: "Put in Basket",
-        desc: "Carefully place each item in your basket — gently for the eggs, stacked for the cans!",
-      },
-      {
-        emoji: "💰",
-        title: "Count Your Money",
-        desc: "Take out your coins and notes, count carefully, and make sure you have enough to pay!",
-      },
-      {
-        emoji: "🧾",
-        title: "Pay at Counter",
-        desc: "Walk to the cashier, say hello, hand over your money, and wait for your change!",
-      },
-    ],
-    badges: [
-      {
-        emoji: "🛍️",
-        label: "Smart Shopper",
-        color: "bg-green-100 text-green-800",
-      },
-      {
-        emoji: "💰",
-        label: "Money Master",
-        color: "bg-emerald-100 text-emerald-800",
-      },
-      {
-        emoji: "🏆",
-        label: "Independent Star",
-        color: "bg-teal-100 text-teal-800",
-      },
-    ],
-  },
-  road: {
-    steps: [
-      {
-        emoji: "👀",
-        title: "Look Left & Right",
-        desc: "Stop at the kerb, look left, look right, look left again — make sure the road is clear!",
-      },
-      {
-        emoji: "🟢",
-        title: "Wait for Green",
-        desc: "Stand at the crossing, watch for the green man signal, and wait patiently until it's safe!",
-      },
-      {
-        emoji: "🦓",
-        title: "Use the Crosswalk",
-        desc: "Walk straight across on the zebra stripes — always use the crossing, never jaywalk!",
-      },
-      {
-        emoji: "🚗",
-        title: "Watch for Cars",
-        desc: "Even when crossing, keep watching for cars — some drivers might not stop in time!",
-      },
-      {
-        emoji: "🚶",
-        title: "Walk Safely",
-        desc: "Walk at a steady pace, stay on the footpath, and arrive safely at your destination!",
-      },
-    ],
-    badges: [
-      { emoji: "🛡️", label: "Safety Hero", color: "bg-red-100 text-red-800" },
-      {
-        emoji: "🌟",
-        label: "Street Smart",
-        color: "bg-orange-100 text-orange-800",
-      },
-      {
-        emoji: "🏆",
-        label: "Road Champion",
-        color: "bg-rose-100 text-rose-800",
-      },
-    ],
-  },
-};
-
-const AGE_GROUPS = [
-  {
-    emoji: "👶",
-    label: "Ages 4–7",
-    sub: "Mobile Games",
-    color: "bg-yellow-400",
-    desc: "Simple tap-and-learn games designed for tiny fingers. Colorful animations guide every step with sounds and celebrations!",
-    features: [
-      "🎵 Audio instructions",
-      "🌈 Color matching",
-      "👏 Celebration rewards",
-      "📱 Touch-optimized",
-    ],
-  },
-  {
-    emoji: "🧒",
-    label: "Ages 8–12",
-    sub: "Interactive Apps",
-    color: "bg-green-400",
-    desc: "Story-based interactive adventures with choices and challenges that build real-world skills step by step.",
-    features: [
-      "📖 Story adventures",
-      "🧩 Skill puzzles",
-      "🏅 Achievement badges",
-      "📊 Progress tracking",
-    ],
-  },
-  {
-    emoji: "🧑",
-    label: "Ages 13+",
-    sub: "VR Experiences",
-    color: "bg-purple-400",
-    desc: "Immersive virtual reality environments that simulate real-life scenarios for safe, confident practice.",
-    features: [
-      "🥽 VR headset support",
-      "🏪 Real-world simulations",
-      "🗣️ Social scenarios",
-      "📈 Therapist reports",
+      { emoji: "👀", text: "Look left, right, left again" },
+      { emoji: "🚦", text: "Wait for the green light" },
+      { emoji: "🦺", text: "Cross at the zebra crossing" },
+      { emoji: "✋", text: "Walk, don't run across" },
     ],
   },
 ];
 
-const VR_ACTIVITIES = [
+const AGE_GROUPS: AgeGroup[] = [
   {
-    emoji: "🏪",
-    title: "Virtual Shopping",
-    desc: "Practice navigating a store, choosing products, and handling money in a safe virtual environment.",
-    color: "from-amber-500 to-orange-500",
+    emoji: "🐣",
+    age: "Age 3–5",
+    desc: "Fun mobile games",
+    bg: "bg-yellow-100",
+    border: "border-yellow-400",
   },
   {
-    emoji: "🚌",
-    title: "Bus Journey",
-    desc: "Learn bus etiquette, reading route maps, and interacting with drivers and passengers confidently.",
-    color: "from-sky-500 to-blue-600",
+    emoji: "🌱",
+    age: "Age 6–8",
+    desc: "Simple VR adventures",
+    bg: "bg-teal-100",
+    border: "border-teal-400",
+  },
+  {
+    emoji: "🌟",
+    age: "Age 9–12",
+    desc: "Social skill training",
+    bg: "bg-purple-100",
+    border: "border-purple-400",
+  },
+  {
+    emoji: "🦁",
+    age: "Age 13+",
+    desc: "Independence skills",
+    bg: "bg-rose-100",
+    border: "border-rose-400",
+  },
+];
+
+const VR_SCENES: VrScene[] = [
+  {
+    emoji: "🦷",
+    title: "Brushing Teeth",
+    caption: "Learn the perfect routine",
+    bg: "bg-sky-100",
+  },
+  {
+    emoji: "🛝",
+    title: "Playground",
+    caption: "Make friends and play",
+    bg: "bg-green-100",
+  },
+  {
+    emoji: "🛒",
+    title: "Shopping",
+    caption: "Practice buying groceries",
+    bg: "bg-orange-100",
+  },
+  {
+    emoji: "🏫",
+    title: "Classroom",
+    caption: "Interactive school day",
+    bg: "bg-purple-100",
+  },
+  {
+    emoji: "🚶",
+    title: "Road Crossing",
+    caption: "Stay safe on roads",
+    bg: "bg-rose-100",
+  },
+];
+
+const GALLERY_ITEMS: GalleryItem[] = [
+  {
+    emoji: "🌅",
+    title: "Morning Routine Training",
+    goal: "Build daily independence habits",
+    bg: "bg-amber-100",
   },
   {
     emoji: "🍳",
-    title: "Cooking Skills",
-    desc: "Follow step-by-step recipe guides in a virtual kitchen to build independence and healthy habits.",
-    color: "from-green-500 to-emerald-600",
+    title: "Kitchen Learning",
+    goal: "Safe food prep & cooking skills",
+    bg: "bg-orange-100",
   },
-];
-
-const STATS = [
   {
-    emoji: "👨‍👩‍👧",
-    value: "2,500+",
-    label: "Families",
-    color: "bg-amber-400",
+    emoji: "🏫",
+    title: "Classroom Interaction",
+    goal: "Engage, listen & participate",
+    bg: "bg-violet-100",
   },
-  { emoji: "🏫", value: "150+", label: "Schools", color: "bg-sky-400" },
-  { emoji: "🌍", value: "12", label: "Countries", color: "bg-green-400" },
-  { emoji: "⭐", value: "4.9/5", label: "Rating", color: "bg-purple-400" },
+  {
+    emoji: "🛒",
+    title: "Shopping Practice",
+    goal: "Count money & make choices",
+    bg: "bg-teal-100",
+  },
+  {
+    emoji: "🚦",
+    title: "Road Safety Training",
+    goal: "Navigate streets confidently",
+    bg: "bg-green-100",
+  },
 ];
 
-const PLANS = [
+const PLANS: Plan[] = [
   {
     emoji: "🆓",
-    name: "Free Family",
+    name: "Free Family Plan",
     price: "$0",
-    period: "forever",
-    color: "border-sky-300 bg-sky-50",
-    btn: "bg-sky-400 hover:bg-sky-500 text-white",
-    features: [
-      "3 learning modules",
-      "1 child profile",
-      "Basic progress view",
-      "Community support",
-    ],
-    badge: null,
+    period: "/month",
     popular: false,
+    features: [
+      "✅ 2 learning modules",
+      "📊 Basic progress tracking",
+      "📱 Mobile app access",
+      "👨‍👩‍👧 1 child profile",
+    ],
+    color: "border-teal-300 bg-teal-50",
+    btnColor: "bg-teal-500 hover:bg-teal-600 text-white",
   },
   {
     emoji: "🏫",
     name: "School Plan",
     price: "$29",
-    period: "/ month",
-    color: "border-amber-400 bg-gradient-to-b from-amber-50 to-orange-50",
-    btn: "bg-amber-400 hover:bg-amber-500 text-white",
-    features: [
-      "All 5 modules",
-      "Up to 30 children",
-      "Teacher dashboard",
-      "Progress reports",
-      "Priority support",
-    ],
-    badge: "Most Popular 🔥",
+    period: "/month",
     popular: true,
-  },
-  {
-    emoji: "🩺",
-    name: "Therapy Pro",
-    price: "$49",
-    period: "/ month",
-    color: "border-purple-300 bg-purple-50",
-    btn: "bg-purple-400 hover:bg-purple-500 text-white",
     features: [
-      "Everything in School",
-      "VR module access",
-      "Therapist tools",
-      "Clinical reports",
-      "Research data export",
+      "✅ All 15 modules",
+      "📊 Class management",
+      "🥽 Full VR access",
+      "📋 Detailed reports",
+      "👥 Up to 30 students",
     ],
-    badge: null,
+    color: "border-purple-400 bg-purple-50 ring-2 ring-purple-400",
+    btnColor: "bg-purple-600 hover:bg-purple-700 text-white",
+  },
+  {
+    emoji: "💼",
+    name: "Therapy Pro Plan",
+    price: "$49",
+    period: "/month",
     popular: false,
+    features: [
+      "✅ All School features",
+      "🩺 Therapist tools",
+      "📈 Advanced analytics",
+      "🔔 Priority support",
+      "🏆 Custom modules",
+    ],
+    color: "border-rose-300 bg-rose-50",
+    btnColor: "bg-rose-500 hover:bg-rose-600 text-white",
   },
 ];
 
-const PARTNERS = [
+const IMPACT_ITEMS = [
   {
-    emoji: "🏫",
-    title: "Schools",
-    desc: "Integrate Zindaa into your inclusive education program.",
-    color: "bg-sky-100 border-sky-200",
+    emoji: "🏆",
+    title: "Improves Independence",
+    desc: "Children learn real-world skills",
   },
   {
-    emoji: "❤️",
-    title: "NGOs",
-    desc: "Partner with us to reach more children and families in need.",
-    color: "bg-green-100 border-green-200",
+    emoji: "💬",
+    title: "Builds Social Skills",
+    desc: "Peer interaction & communication",
   },
   {
-    emoji: "🩺",
-    title: "Therapists",
-    desc: "Use our platform to support your therapy sessions.",
-    color: "bg-purple-100 border-purple-200",
+    emoji: "🌍",
+    title: "Real-Life Learning",
+    desc: "VR mirrors daily situations",
   },
   {
-    emoji: "🔬",
-    title: "Researchers",
-    desc: "Collaborate on evidence-based learning research studies.",
-    color: "bg-amber-100 border-amber-200",
+    emoji: "💪",
+    title: "Encourages Confidence",
+    desc: "Safe space to try & succeed",
   },
 ];
 
-function SectionHeading({
-  children,
-  sub,
-  accentColor = "oklch(0.78 0.18 75)",
-}: {
-  children: React.ReactNode;
-  sub?: string;
-  accentColor?: string;
-}) {
-  return (
-    <div className="text-center mb-12">
-      <h2
-        className="text-4xl md:text-5xl font-extrabold mb-3 inline-block relative"
-        style={{
-          fontFamily: "'Bricolage Grotesque', sans-serif",
-          color: "oklch(0.2 0.04 260)",
-        }}
-      >
-        {children}
-        <span
-          className="absolute -bottom-2 left-0 right-0 h-1.5 rounded-full"
-          style={{
-            background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
-          }}
-        />
-      </h2>
-      {sub && (
-        <p className="text-lg mt-4" style={{ color: "oklch(0.45 0.04 260)" }}>
-          {sub}
-        </p>
-      )}
-    </div>
-  );
-}
+const COLLAB_TYPES = [
+  { emoji: "🏫", title: "Schools", desc: "Bring Zindaa to your classroom" },
+  { emoji: "🩺", title: "Therapists", desc: "Enhance your therapy sessions" },
+  { emoji: "🌿", title: "NGOs", desc: "Support inclusive education" },
+  { emoji: "🔬", title: "Researchers", desc: "Collaborate on impact studies" },
+];
 
-function ActivityPage({
-  pageKey,
-  onBack,
-}: {
-  pageKey: Exclude<PageKey, "home">;
-  onBack: () => void;
-}) {
-  const mod = MODULES.find((m) => m.key === pageKey)!;
-  const data = ACTIVITY_DATA[pageKey];
+const NAV_LINKS = [
+  { label: "Modules", href: "#modules" },
+  { label: "Ages", href: "#ages" },
+  { label: "VR", href: "#vr" },
+  { label: "Gallery", href: "#gallery" },
+  { label: "Plans", href: "#plans" },
+  { label: "Contact", href: "#contact" },
+];
 
+// ── FloatingEmoji ─────────────────────────────────────────────────────────────
+function FloatingEmoji({
+  emoji,
+  className,
+}: { emoji: string; className: string }) {
   return (
     <div
-      className="min-h-screen"
-      style={{ backgroundColor: "oklch(0.99 0.005 90)" }}
+      className={`absolute select-none pointer-events-none text-4xl ${className}`}
     >
-      {/* Banner */}
-      <div
-        className="relative overflow-hidden pt-24 pb-16 px-4"
-        style={{
-          background: `linear-gradient(135deg, ${mod.gradientFrom}, ${mod.gradientTo})`,
-        }}
-      >
-        {/* Decorative circles */}
-        <div className="absolute top-8 right-8 w-40 h-40 rounded-full bg-white/10 animate-float-slow" />
-        <div className="absolute bottom-4 left-12 w-24 h-24 rounded-full bg-white/10 animate-float" />
-        <div className="absolute top-16 left-1/3 w-16 h-16 rounded-full bg-white/15 animate-float-slow" />
-
-        <div className="max-w-3xl mx-auto relative z-10 text-center">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-5 rounded-full text-sm transition-all mb-8 hover:scale-105"
-            data-ocid="activity.cancel_button"
-          >
-            <ArrowLeft size={16} /> Back to Modules
-          </button>
-
-          <div className="text-8xl mb-4 animate-float">{mod.emoji}</div>
-          <h1
-            className="text-5xl md:text-6xl font-extrabold text-white mb-4"
-            style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
-          >
-            {mod.title}
-          </h1>
-          <p className="text-xl text-white/85 max-w-md mx-auto">{mod.desc}</p>
-        </div>
-      </div>
-
-      {/* Steps */}
-      <div className="max-w-3xl mx-auto px-4 py-12">
-        <h2
-          className="text-3xl font-extrabold mb-8 text-center"
-          style={{
-            fontFamily: "'Bricolage Grotesque', sans-serif",
-            color: "oklch(0.2 0.04 260)",
-          }}
-        >
-          Your Steps 👣
-        </h2>
-
-        <div className="space-y-5">
-          {data.steps.map((step, i) => (
-            <div
-              key={step.title}
-              className="bg-white rounded-3xl p-6 shadow-md border border-gray-100 flex gap-5 items-start card-bounce"
-              data-ocid={`activity.card.${i + 1}`}
-              style={{
-                borderLeft: `4px solid ${mod.gradientTo}`,
-              }}
-            >
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
-                style={{
-                  background: `linear-gradient(135deg, ${mod.gradientFrom}33, ${mod.gradientTo}33)`,
-                }}
-              >
-                {step.emoji}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-extrabold text-white flex-shrink-0"
-                    style={{ background: mod.gradientTo }}
-                  >
-                    {i + 1}
-                  </span>
-                  <h3
-                    className="font-extrabold text-lg"
-                    style={{
-                      fontFamily: "'Bricolage Grotesque', sans-serif",
-                      color: "oklch(0.2 0.04 260)",
-                    }}
-                  >
-                    {step.title}
-                  </h3>
-                </div>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: "oklch(0.45 0.04 260)" }}
-                >
-                  {step.desc}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Badges */}
-        <div className="mt-12 text-center">
-          <h3
-            className="text-2xl font-extrabold mb-6"
-            style={{
-              fontFamily: "'Bricolage Grotesque', sans-serif",
-              color: "oklch(0.2 0.04 260)",
-            }}
-          >
-            Earn These Badges! 🏅
-          </h3>
-          <div className="flex flex-wrap justify-center gap-4 mb-10">
-            {data.badges.map((badge) => (
-              <div
-                key={badge.label}
-                className={`${badge.color} rounded-2xl px-6 py-4 flex items-center gap-3 shadow-sm text-lg font-bold`}
-              >
-                <span className="text-3xl">{badge.emoji}</span>
-                <span>{badge.label}</span>
-              </div>
-            ))}
-          </div>
-
-          <Button
-            type="button"
-            size="lg"
-            className="rounded-full text-xl font-extrabold px-12 py-8 shadow-xl btn-wiggle"
-            style={{
-              background: `linear-gradient(135deg, ${mod.gradientFrom}, ${mod.gradientTo})`,
-              color: "white",
-              boxShadow: `0 8px 32px ${mod.glowColor}`,
-            }}
-            data-ocid="activity.primary_button"
-          >
-            Start Activity 🎮
-          </Button>
-        </div>
-      </div>
+      {emoji}
     </div>
   );
 }
 
+// ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [navOpen, setNavOpen] = useState(false);
-  const [selectedAge, setSelectedAge] = useState(0);
-  const [currentPage, setCurrentPage] = useState<PageKey>("home");
-  const [contactForm, setContactForm] = useState({
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeAge, setActiveAge] = useState<number | null>(null);
+  const [openModule, setOpenModule] = useState<Module | null>(null);
+  const [openVideo, setOpenVideo] = useState<GalleryItem | null>(null);
+  const [form, setForm] = useState({
     name: "",
+    org: "",
     email: "",
     message: "",
   });
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleFormChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSubmitting(true);
+    await new Promise((r) => setTimeout(r, 1000));
+    setSubmitting(false);
     setSubmitted(true);
-    toast.success("Message sent! We'll get back to you soon 🎉");
-    setContactForm({ name: "", email: "", message: "" });
-  }
-
-  function scrollTo(id: string) {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    setNavOpen(false);
-  }
-
-  function goToModule(key: PageKey) {
-    setCurrentPage(key);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function goHome() {
-    setCurrentPage("home");
-    setTimeout(() => scrollTo("modules"), 100);
-  }
-
-  if (currentPage !== "home") {
-    return (
-      <>
-        <Toaster position="top-center" />
-        {/* Sticky nav on activity pages */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-amber-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={goHome}
-              className="flex items-center gap-2 font-bold text-2xl"
-              style={{
-                fontFamily: "'Bricolage Grotesque', sans-serif",
-                color: "oklch(0.45 0.18 75)",
-              }}
-              data-ocid="nav.link"
-            >
-              <span className="text-3xl">🌟</span> Zindaa
-            </button>
-            <button
-              type="button"
-              onClick={goHome}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all hover:bg-amber-100"
-              style={{ color: "oklch(0.35 0.05 260)" }}
-              data-ocid="activity.cancel_button"
-            >
-              <ArrowLeft size={16} /> Back to Home
-            </button>
-          </div>
-        </header>
-        <ActivityPage
-          pageKey={currentPage as Exclude<PageKey, "home">}
-          onBack={goHome}
-        />
-      </>
-    );
+    toast.success("Message sent! We'll be in touch soon 🎉");
+    setForm({ name: "", org: "", email: "", message: "" });
   }
 
   return (
-    <div
-      className="min-h-screen overflow-x-hidden"
-      style={{ backgroundColor: "oklch(0.99 0.005 90)" }}
-    >
-      <Toaster position="top-center" />
+    <div className="min-h-screen bg-white font-body overflow-x-hidden">
+      <Toaster richColors />
 
-      {/* NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-amber-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => scrollTo("hero")}
-            className="flex items-center gap-2 font-bold text-2xl"
-            style={{
-              fontFamily: "'Bricolage Grotesque', sans-serif",
-              color: "oklch(0.45 0.18 75)",
-            }}
-            data-ocid="nav.link"
+      {/* ── Navbar ── */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-purple-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <a
+            href="#top"
+            className="flex items-center gap-2 font-display font-bold text-2xl text-purple-700"
           >
             <span className="text-3xl">🌟</span> Zindaa
-          </button>
-
-          <nav className="hidden md:flex items-center gap-1">
-            {["hero", "modules", "vr", "dashboard", "plans"].map((id, i) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => scrollTo(id)}
-                className="px-4 py-2 rounded-full text-sm font-semibold transition-all hover:bg-amber-100"
-                style={{ color: "oklch(0.35 0.05 260)" }}
+          </a>
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-6">
+            {NAV_LINKS.map((link, i) => (
+              <a
+                key={link.href}
+                href={link.href}
                 data-ocid={`nav.link.${i + 1}`}
+                className="text-gray-600 hover:text-purple-700 font-medium transition-colors"
               >
-                {["Home", "Learn", "VR World", "Dashboard", "Plans"][i]}
-              </button>
+                {link.label}
+              </a>
             ))}
           </nav>
-
-          <Button
-            type="button"
-            onClick={() => scrollTo("plans")}
-            className="hidden md:flex rounded-full font-bold text-sm px-6"
-            style={{
-              backgroundColor: "oklch(0.78 0.18 75)",
-              color: "oklch(0.15 0.02 260)",
-            }}
-            data-ocid="nav.primary_button"
+          <a
+            href="#plans"
+            className="hidden md:inline-flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-full transition-all hover:scale-105"
           >
-            Get Started ✨
-          </Button>
-
+            Get Started <ChevronRight size={16} />
+          </a>
+          {/* Mobile hamburger */}
           <button
             type="button"
-            onClick={() => setNavOpen(!navOpen)}
-            className="md:hidden p-2 rounded-full"
+            className="md:hidden p-2 rounded-lg hover:bg-purple-50"
+            onClick={() => setMenuOpen((v) => !v)}
             aria-label="Toggle menu"
-            data-ocid="nav.toggle"
           >
-            {navOpen ? <X size={24} /> : <Menu size={24} />}
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
-
-        {navOpen && (
-          <div className="md:hidden bg-white border-t border-amber-100 p-4 flex flex-col gap-2">
-            {["hero", "modules", "vr", "dashboard", "plans", "contact"].map(
-              (id, i) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => scrollTo(id)}
-                  className="text-left px-4 py-3 rounded-2xl font-semibold hover:bg-amber-50 transition-colors"
-                  data-ocid={`nav.link.${i + 1}`}
-                >
-                  {
-                    [
-                      "🏠 Home",
-                      "📚 Learn",
-                      "🥽 VR World",
-                      "📊 Dashboard",
-                      "💳 Plans",
-                      "✉️ Contact",
-                    ][i]
-                  }
-                </button>
-              ),
-            )}
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="md:hidden bg-white border-t border-purple-100 px-4 pb-4">
+            {NAV_LINKS.map((link, i) => (
+              <a
+                key={link.href}
+                href={link.href}
+                data-ocid={`nav.link.${i + 1}`}
+                className="block py-2 text-gray-700 hover:text-purple-700 font-medium"
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </a>
+            ))}
+            <a
+              href="#plans"
+              className="mt-2 block text-center bg-purple-600 text-white font-semibold px-5 py-2 rounded-full"
+            >
+              Get Started
+            </a>
           </div>
         )}
       </header>
 
-      {/* HERO */}
-      <section id="hero" className="pt-28 pb-20 px-4 relative overflow-hidden">
-        {/* Gradient mesh background */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 60% at 80% 20%, oklch(0.94 0.12 88 / 0.5) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 10% 80%, oklch(0.88 0.12 290 / 0.3) 0%, transparent 55%), radial-gradient(ellipse 60% 40% at 50% 50%, oklch(0.92 0.1 155 / 0.2) 0%, transparent 60%)",
-          }}
+      {/* ── 1. Hero ── */}
+      <section
+        id="top"
+        className="relative gradient-hero min-h-[90vh] flex items-center overflow-hidden"
+      >
+        {/* Floating emojis */}
+        <FloatingEmoji
+          emoji="🌟"
+          className="top-10 left-8 float-anim opacity-80"
         />
-        {/* Floating blobs */}
-        <div
-          className="absolute top-10 right-10 w-72 h-72 rounded-full opacity-20 animate-float-slow"
-          style={{ backgroundColor: "oklch(0.88 0.18 88)" }}
+        <FloatingEmoji
+          emoji="⭐"
+          className="top-24 left-1/4 float-anim-slow opacity-70"
         />
-        <div
-          className="absolute bottom-10 left-10 w-56 h-56 rounded-full opacity-15 animate-float"
-          style={{ backgroundColor: "oklch(0.72 0.18 290)" }}
+        <FloatingEmoji
+          emoji="🎮"
+          className="top-16 right-16 float-anim opacity-80"
         />
-        <div
-          className="absolute top-40 left-1/3 w-40 h-40 blob opacity-10"
-          style={{ backgroundColor: "oklch(0.82 0.16 155)" }}
+        <FloatingEmoji
+          emoji="🎨"
+          className="bottom-20 left-12 float-anim-fast opacity-70"
+        />
+        <FloatingEmoji
+          emoji="🎯"
+          className="bottom-16 right-24 float-anim-slow opacity-80"
+        />
+        <FloatingEmoji
+          emoji="🌈"
+          className="top-1/2 right-8 float-anim opacity-60"
+        />
+        <FloatingEmoji
+          emoji="✨"
+          className="bottom-32 left-1/3 float-anim-fast opacity-70"
         />
 
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
-          <div>
-            <Badge
-              className="mb-4 rounded-full px-4 py-1 text-sm font-bold"
-              style={{
-                backgroundColor: "oklch(0.88 0.18 88)",
-                color: "oklch(0.25 0.05 75)",
-                border: "none",
-              }}
-            >
-              <Sparkles size={14} className="mr-1" /> Hybrid Learning Platform
-            </Badge>
-            <h1
-              className="text-6xl md:text-7xl font-extrabold leading-tight mb-6"
-              style={{
-                fontFamily: "'Bricolage Grotesque', sans-serif",
-                color: "oklch(0.2 0.04 260)",
-              }}
-            >
-              Learn.
+        <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 flex flex-col md:flex-row items-center gap-12 relative z-10">
+          {/* Text */}
+          <div className="flex-1 text-center md:text-left">
+            <div className="inline-block bg-white/20 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
+              🎓 Visual & VR Learning Platform
+            </div>
+            <h1 className="font-display font-bold text-4xl md:text-6xl lg:text-7xl text-white leading-tight mb-6">
+              Zindaa – <span className="text-yellow-200">Learning</span> Life
+              Skills
               <br />
-              <span style={{ color: "oklch(0.65 0.2 75)" }}>Play.</span>
-              <br />
-              <span style={{ color: "oklch(0.6 0.18 290)" }}>Grow.</span> 🌱
+              Through <span className="text-pink-200">Play</span>
             </h1>
-            <p
-              className="text-lg md:text-xl mb-8 leading-relaxed"
-              style={{ color: "oklch(0.45 0.04 260)" }}
-            >
-              A joyful hybrid learning world — mobile games &amp; VR adventures
-              — built for children with Down syndrome to master everyday life
-              skills with confidence.
+            <p className="text-white/90 text-xl md:text-2xl mb-10 max-w-xl">
+              Interactive & VR Learning for Every Child 🌟
             </p>
-            <div className="flex flex-wrap gap-4">
-              <Button
-                type="button"
-                onClick={() => scrollTo("modules")}
-                size="lg"
-                className="rounded-full text-lg font-bold px-8 py-6 btn-wiggle shadow-xl"
-                style={{
-                  background:
-                    "linear-gradient(135deg, oklch(0.82 0.2 75), oklch(0.72 0.22 55))",
-                  color: "white",
-                  boxShadow: "0 8px 24px oklch(0.78 0.18 75 / 0.4)",
-                }}
+            <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+              <a
+                href="#modules"
                 data-ocid="hero.primary_button"
+                className="inline-flex items-center gap-2 bg-white text-purple-700 font-bold text-lg px-8 py-4 rounded-2xl shadow-xl hover:scale-105 transition-transform hover:shadow-2xl"
               >
-                Start Learning 🎮
-              </Button>
-              <Button
-                type="button"
-                onClick={() => scrollTo("vr")}
-                size="lg"
-                variant="outline"
-                className="rounded-full text-lg font-bold px-8 py-6 btn-wiggle"
-                style={{
-                  borderColor: "oklch(0.68 0.18 290)",
-                  color: "oklch(0.5 0.18 290)",
-                }}
+                🚀 Start Learning
+              </a>
+              <a
+                href="#gallery"
                 data-ocid="hero.secondary_button"
+                className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white border-2 border-white/60 font-bold text-lg px-8 py-4 rounded-2xl hover:bg-white/30 hover:scale-105 transition-all"
               >
-                Explore VR 🥽
-              </Button>
+                ▶️ Watch Demo
+              </a>
             </div>
           </div>
-
-          {/* Illustration */}
-          <div className="flex justify-center items-center">
-            <div className="relative w-80 h-80">
-              {/* Decorative floating rings */}
-              <div
-                className="absolute inset-0 rounded-full animate-spin-slow opacity-30"
-                style={{
-                  border: "3px dashed oklch(0.78 0.18 75)",
-                  transform: "scale(1.2)",
-                }}
+          {/* Hero image */}
+          <div className="flex-1 flex justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-white/20 rounded-3xl blur-3xl scale-110" />
+              <img
+                src="/assets/generated/hero-vr-child.dim_900x600.png"
+                alt="Child learning with VR headset"
+                className="relative z-10 w-full max-w-lg rounded-3xl shadow-2xl float-anim"
               />
-              <div
-                className="absolute inset-0 rounded-full opacity-20"
-                style={{
-                  border: "2px dashed oklch(0.68 0.18 290)",
-                  transform: "scale(1.45)",
-                  animation: "spin-slow 20s linear infinite reverse",
-                }}
-              />
-              {/* Main circle */}
-              <div
-                className="absolute inset-0 rounded-full animate-float"
-                style={{
-                  background:
-                    "linear-gradient(135deg, oklch(0.92 0.12 88), oklch(0.85 0.15 290))",
-                }}
-              />
-              {/* Child emoji */}
-              <div className="absolute inset-0 flex items-center justify-center text-[7rem] animate-float">
-                🧒
-              </div>
-              {/* Floating badges */}
-              <div className="absolute -top-4 -right-4 bg-white rounded-2xl shadow-lg p-3 animate-float text-3xl">
-                🥽
-              </div>
-              <div className="absolute -bottom-2 -left-6 bg-white rounded-2xl shadow-lg p-3 animate-float-slow text-3xl">
-                📱
-              </div>
-              <div className="absolute top-1/2 -right-10 bg-white rounded-2xl shadow-lg p-3 animate-float text-3xl">
-                ⭐
-              </div>
-              <div className="absolute -top-6 left-1/4 bg-white rounded-2xl shadow-lg p-3 animate-float-slow text-2xl">
-                🎯
-              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* LEARNING MODULES */}
+      {/* ── 2. Learning Modules ── */}
       <section
         id="modules"
-        className="py-20 px-4"
-        style={{ backgroundColor: "oklch(0.97 0.01 90)" }}
+        className="py-20 px-4 bg-gradient-to-br from-purple-50 to-pink-50"
       >
         <div className="max-w-7xl mx-auto">
-          <SectionHeading
-            sub="Pick your journey — every skill matters!"
-            accentColor="oklch(0.78 0.18 75)"
-          >
-            Learning Adventures 🗺️
-          </SectionHeading>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {MODULES.map((mod, i) => (
-              <div
-                key={mod.title}
-                className={`${mod.color} rounded-3xl p-6 text-center cursor-pointer border-2 border-transparent transition-all duration-300 hover:-translate-y-2`}
-                style={
-                  {
-                    // subtle glow on hover via boxShadow — using inline for CSS variable trick
-                  }
-                }
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.boxShadow =
-                    `0 12px 40px ${mod.glowColor}`;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-                }}
-                data-ocid={`module.card.${i + 1}`}
-              >
-                <div className="text-6xl mb-4">{mod.emoji}</div>
-                <h3
-                  className="font-extrabold text-lg mb-2"
-                  style={{
-                    color: "oklch(0.2 0.04 260)",
-                    fontFamily: "'Bricolage Grotesque', sans-serif",
-                  }}
-                >
-                  {mod.title}
-                </h3>
-                <p
-                  className="text-sm mb-4"
-                  style={{ color: "oklch(0.4 0.04 260)" }}
-                >
-                  {mod.desc}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => goToModule(mod.key)}
-                  className={`${mod.btn} text-white font-bold py-2 px-6 rounded-full text-sm transition-transform hover:scale-105 active:scale-95`}
-                  data-ocid={`module.button.${i + 1}`}
-                >
-                  Start ▶
-                </button>
-              </div>
-            ))}
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              📚 Learning Modules
+            </h2>
+            <p className="text-gray-500 text-lg">
+              Tap a card to start your adventure!
+            </p>
           </div>
-        </div>
-      </section>
-
-      {/* AGE-BASED LEARNING */}
-      <section className="py-20 px-4">
-        <div className="max-w-5xl mx-auto">
-          <SectionHeading
-            sub="Learning that grows with your child"
-            accentColor="oklch(0.72 0.18 290)"
-          >
-            Made For Every Age 🎂
-          </SectionHeading>
-
-          <div className="flex flex-wrap justify-center gap-4 mb-10">
-            {AGE_GROUPS.map((ag, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {MODULES.map((mod, i) => (
               <button
                 type="button"
-                key={ag.label}
-                onClick={() => setSelectedAge(i)}
-                className={`${ag.color} px-8 py-4 rounded-2xl font-bold text-lg transition-all shadow-md hover:shadow-lg ${
-                  selectedAge === i
-                    ? "scale-110 ring-4 ring-offset-2 ring-current"
-                    : "opacity-70 hover:opacity-100"
-                }`}
-                style={{ color: "oklch(0.15 0.02 260)" }}
-                data-ocid={`age.tab.${i + 1}`}
+                key={mod.title}
+                data-ocid={`modules.item.${i + 1}`}
+                onClick={() => setOpenModule(mod)}
+                className={`group relative bg-gradient-to-br ${mod.color} rounded-3xl p-8 text-center shadow-lg hover:shadow-xl ${mod.glow} hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-white`}
               >
-                <span className="text-3xl block mb-1">{ag.emoji}</span>
-                <span>{ag.label}</span>
-                <span className="block text-xs font-medium">{ag.sub}</span>
+                <div className="text-6xl mb-4">{mod.emoji}</div>
+                <h3 className="font-display font-bold text-gray-800 text-lg mb-1">
+                  {mod.title}
+                </h3>
+                <p className="text-gray-600 text-sm">{mod.label}</p>
+                <div className="mt-5 inline-flex items-center gap-1 bg-white/70 hover:bg-white text-purple-700 font-semibold text-sm px-4 py-2 rounded-full transition-all group-hover:shadow">
+                  <Play size={14} /> Start
+                </div>
               </button>
             ))}
           </div>
+        </div>
+      </section>
 
-          <div
-            key={selectedAge}
-            className="rounded-3xl p-8 text-center animate-pop-in"
-            style={{
-              background:
-                "linear-gradient(135deg, oklch(0.95 0.05 88), oklch(0.93 0.06 290))",
-            }}
+      {/* Module Detail Dialog */}
+      <Dialog open={!!openModule} onOpenChange={() => setOpenModule(null)}>
+        <DialogContent
+          data-ocid="modules.modal"
+          className="max-w-lg rounded-3xl"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display flex items-center gap-3">
+              <span className="text-5xl">{openModule?.emoji}</span>
+              <span>{openModule?.title}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            {openModule?.steps.map((step) => (
+              <div
+                key={step.text}
+                className="bg-purple-50 rounded-2xl p-4 text-center"
+              >
+                <div className="text-4xl mb-2">{step.emoji}</div>
+                <p className="text-gray-700 text-sm font-medium">{step.text}</p>
+              </div>
+            ))}
+          </div>
+          <Button
+            data-ocid="modules.close_button"
+            onClick={() => setOpenModule(null)}
+            className="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white rounded-2xl text-lg py-6"
           >
-            <div className="text-7xl mb-4">{AGE_GROUPS[selectedAge].emoji}</div>
-            <h3
-              className="text-2xl font-extrabold mb-3"
-              style={{
-                fontFamily: "'Bricolage Grotesque', sans-serif",
-                color: "oklch(0.2 0.04 260)",
-              }}
-            >
-              {AGE_GROUPS[selectedAge].label} — {AGE_GROUPS[selectedAge].sub}
-            </h3>
-            <p
-              className="text-lg mb-6"
-              style={{ color: "oklch(0.4 0.04 260)" }}
-            >
-              {AGE_GROUPS[selectedAge].desc}
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              {AGE_GROUPS[selectedAge].features.map((f) => (
-                <span
-                  key={f}
-                  className="bg-white rounded-full px-4 py-2 font-semibold text-sm shadow-sm"
-                  style={{ color: "oklch(0.3 0.05 260)" }}
+            Got it! 🎉
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── 3. Age-Based Learning ── */}
+      <section id="ages" className="py-20 px-4 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              👶 Choose Your Age
+            </h2>
+            <p className="text-gray-500 text-lg">Every age, a new adventure!</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {AGE_GROUPS.map((ag, i) => (
+              <button
+                type="button"
+                key={ag.age}
+                data-ocid={`age.item.${i + 1}`}
+                onClick={() => setActiveAge(activeAge === i ? null : i)}
+                className={`group flex flex-col items-center p-8 rounded-3xl border-4 transition-all duration-300 hover:scale-105 cursor-pointer
+                  ${activeAge === i ? `${ag.bg} ${ag.border} scale-105 shadow-xl` : "bg-gray-50 border-gray-200 hover:border-gray-300"}`}
+              >
+                <div
+                  className={`text-6xl mb-3 transition-transform duration-300 ${activeAge === i ? "float-anim" : "group-hover:scale-110"}`}
                 >
-                  {f}
-                </span>
-              ))}
-            </div>
+                  {ag.emoji}
+                </div>
+                <div className="font-display font-bold text-gray-800 text-lg">
+                  {ag.age}
+                </div>
+                <div className="text-gray-500 text-sm mt-1 text-center">
+                  {ag.desc}
+                </div>
+                {activeAge === i && (
+                  <div className="mt-3 bg-white/70 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full">
+                    ✓ Selected!
+                  </div>
+                )}
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* VR EXPERIENCE */}
+      {/* ── 4. VR Experiences ── */}
       <section
         id="vr"
-        className="py-20 px-4 relative overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(160deg, oklch(0.16 0.08 270), oklch(0.12 0.1 290) 50%, oklch(0.1 0.06 260))",
-        }}
+        className="py-20 px-4 bg-gradient-to-br from-indigo-50 to-violet-50"
       >
-        {/* Starfield - CSS background dots */}
-        <div
-          className="absolute inset-0 overflow-hidden pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(1px 1px at 10% 15%, white 0%, transparent 100%), radial-gradient(1px 1px at 25% 40%, white 0%, transparent 100%), radial-gradient(2px 2px at 40% 10%, white 0%, transparent 100%), radial-gradient(1px 1px at 55% 60%, white 0%, transparent 100%), radial-gradient(2px 2px at 70% 25%, white 0%, transparent 100%), radial-gradient(1px 1px at 85% 75%, white 0%, transparent 100%), radial-gradient(1px 1px at 15% 80%, white 0%, transparent 100%), radial-gradient(2px 2px at 90% 45%, white 0%, transparent 100%), radial-gradient(1px 1px at 35% 90%, white 0%, transparent 100%), radial-gradient(1px 1px at 60% 5%, white 0%, transparent 100%), radial-gradient(30px 30px at 20% 30%, oklch(0.75 0.18 290 / 0.12) 0%, transparent 100%), radial-gradient(25px 25px at 75% 60%, oklch(0.72 0.16 230 / 0.12) 0%, transparent 100%), radial-gradient(20px 20px at 50% 85%, oklch(0.75 0.18 290 / 0.1) 0%, transparent 100%)",
-            opacity: 0.8,
-          }}
-        />
-
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-12">
-            <Badge className="mb-4 rounded-full px-4 py-1 text-sm font-bold bg-white/20 text-white border-white/30">
-              🥽 Virtual Reality
-            </Badge>
-            <h2
-              className="text-4xl md:text-5xl font-extrabold mb-4 text-white"
-              style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
-            >
-              Step Into VR World ✨
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              🥽 VR Experiences
             </h2>
-            <p className="text-lg text-white/70">
-              Safe, immersive practice for real-life confidence
+            <p className="text-gray-500 text-lg">
+              Step inside the virtual world!
             </p>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {VR_ACTIVITIES.map((act, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {VR_SCENES.map((scene) => (
               <div
-                key={act.title}
-                className={`bg-gradient-to-br ${act.color} rounded-3xl p-8 text-white card-bounce cursor-pointer relative overflow-hidden`}
-                data-ocid={`vr.card.${i + 1}`}
+                key={scene.title}
+                className={`${scene.bg} rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-white`}
               >
-                <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-white/10 -translate-y-8 translate-x-8" />
-                <div className="text-6xl mb-4 relative z-10">{act.emoji}</div>
-                <h3
-                  className="text-xl font-extrabold mb-3 relative z-10"
-                  style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+                {/* VR preview */}
+                <div
+                  className={`${scene.bg} h-44 flex items-center justify-center relative`}
                 >
-                  {act.title}
+                  <span className="text-8xl">{scene.emoji}</span>
+                  <div className="absolute inset-0 flex items-end justify-end p-3">
+                    <div className="bg-white/80 rounded-full p-2 shadow">
+                      <Play size={18} className="text-purple-700" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-display font-bold text-gray-800">
+                    {scene.title}
+                  </h3>
+                  <p className="text-gray-500 text-sm mt-1">{scene.caption}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 5. Parent & Therapist Dashboard ── */}
+      <section id="dashboard" className="py-20 px-4 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              📊 Dashboard for Parents & Therapists
+            </h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+              Log in to monitor progress, assign activities, and generate
+              reports — all in one beautiful dashboard.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                emoji: "📈",
+                title: "Progress Charts",
+                desc: "Track your child's growth week by week with visual charts",
+                bg: "bg-blue-50",
+                border: "border-blue-200",
+              },
+              {
+                emoji: "📋",
+                title: "Learning Reports",
+                desc: "Detailed activity reports and insights at a glance",
+                bg: "bg-purple-50",
+                border: "border-purple-200",
+              },
+              {
+                emoji: "✅",
+                title: "Activity Tracking",
+                desc: "Assign, monitor, and celebrate daily task completions",
+                bg: "bg-green-50",
+                border: "border-green-200",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className={`${item.bg} border-2 ${item.border} rounded-3xl p-8 text-center shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300`}
+              >
+                <div className="text-6xl mb-5">{item.emoji}</div>
+                <h3 className="font-display font-bold text-gray-800 text-xl mb-3">
+                  {item.title}
                 </h3>
-                <p className="text-white/90 text-sm leading-relaxed relative z-10">
-                  {act.desc}
-                </p>
-                <button
-                  type="button"
-                  className="mt-5 bg-white/20 hover:bg-white/35 text-white font-bold py-2 px-5 rounded-full text-sm transition-all hover:scale-105 relative z-10"
-                  data-ocid={`vr.button.${i + 1}`}
-                >
-                  Try Demo <ChevronRight size={14} className="inline" />
-                </button>
+                <p className="text-gray-600">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* DASHBOARD PREVIEW */}
-      <section
-        id="dashboard"
-        className="py-20 px-4"
-        style={{ backgroundColor: "oklch(0.97 0.01 90)" }}
-      >
-        <div className="max-w-5xl mx-auto">
-          <SectionHeading
-            sub="Parents &amp; therapists can watch progress in real time"
-            accentColor="oklch(0.78 0.18 75)"
-          >
-            Track Every Win 📊
-          </SectionHeading>
-
-          <div className="bg-white rounded-3xl shadow-xl p-8 border border-amber-100">
-            {/* Badges row */}
-            <div className="flex flex-wrap gap-4 mb-8 justify-center">
-              {[
-                { emoji: "🏆", label: "Top Learner", color: "bg-amber-100" },
-                { emoji: "⭐", label: "5 Day Streak", color: "bg-yellow-100" },
-                { emoji: "🎯", label: "Goal Achieved", color: "bg-green-100" },
-                { emoji: "💪", label: "Daily Hero", color: "bg-blue-100" },
-              ].map((badge, i) => (
-                <div
-                  key={badge.label}
-                  className={`${badge.color} rounded-2xl px-5 py-3 flex items-center gap-2`}
-                  data-ocid={`dashboard.card.${i + 1}`}
-                >
-                  <span className="text-2xl">{badge.emoji}</span>
-                  <span
-                    className="font-bold text-sm"
-                    style={{ color: "oklch(0.3 0.04 260)" }}
-                  >
-                    {badge.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Progress bars */}
-            <div className="space-y-5 mb-8">
-              {[
-                {
-                  label: "🌅 Morning Routine",
-                  progress: 85,
-                  color: "bg-amber-400",
-                },
-                {
-                  label: "📚 School Skills",
-                  progress: 72,
-                  color: "bg-sky-400",
-                },
-                {
-                  label: "🛒 Shopping Practice",
-                  progress: 60,
-                  color: "bg-green-400",
-                },
-                { label: "🚦 Road Safety", progress: 45, color: "bg-red-400" },
-              ].map((skill, i) => (
-                <div key={skill.label} data-ocid={`dashboard.row.${i + 1}`}>
-                  <div className="flex justify-between mb-1">
-                    <span
-                      className="font-semibold text-sm"
-                      style={{ color: "oklch(0.3 0.04 260)" }}
-                    >
-                      {skill.label}
-                    </span>
-                    <span
-                      className="font-bold text-sm"
-                      style={{ color: "oklch(0.5 0.05 260)" }}
-                    >
-                      {skill.progress}%
-                    </span>
-                  </div>
-                  <Progress
-                    value={skill.progress}
-                    className="h-4 rounded-full"
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Weekly chart */}
-            <div className="mb-6">
-              <h4
-                className="font-bold mb-3"
-                style={{ color: "oklch(0.3 0.04 260)" }}
-              >
-                📅 This Week
-              </h4>
-              <div className="flex items-end justify-between gap-2 h-24">
-                {[
-                  { d: "Mon", h: 60, idx: 1 },
-                  { d: "Tue", h: 80, idx: 2 },
-                  { d: "Wed", h: 45, idx: 3 },
-                  { d: "Thu", h: 90, idx: 4 },
-                  { d: "Fri", h: 70, idx: 5 },
-                  { d: "Sat", h: 85, idx: 6 },
-                  { d: "Sun", h: 55, idx: 7 },
-                ].map(({ d, h, idx }) => (
-                  <div
-                    key={d}
-                    className="flex-1 flex flex-col items-center gap-1"
-                  >
-                    <div
-                      className="w-full rounded-t-xl transition-all hover:opacity-80"
-                      style={{
-                        height: `${h}%`,
-                        backgroundColor: "oklch(0.78 0.18 75)",
-                      }}
-                      data-ocid={`dashboard.chart_point.${idx}`}
-                    />
-                    <span
-                      className="text-xs"
-                      style={{ color: "oklch(0.5 0.04 260)" }}
-                    >
-                      {d.charAt(0)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Button
-              className="w-full rounded-full font-bold text-base py-6"
-              style={{
-                backgroundColor: "oklch(0.78 0.18 75)",
-                color: "oklch(0.15 0.02 260)",
-              }}
-              data-ocid="dashboard.primary_button"
-            >
-              <Trophy size={18} className="mr-2" /> View Full Dashboard
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* IMPACT STATS */}
-      <section className="py-20 px-4">
-        <div className="max-w-5xl mx-auto">
-          <SectionHeading
-            sub="Real children, real progress, real joy"
-            accentColor="oklch(0.72 0.2 25)"
-          >
-            Our Impact 💫
-          </SectionHeading>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {STATS.map((stat, i) => (
-              <div
-                key={stat.label}
-                className={`${stat.color} rounded-3xl p-6 text-center card-bounce shadow-md`}
-                data-ocid={`impact.card.${i + 1}`}
-              >
-                <div className="text-5xl mb-2">{stat.emoji}</div>
-                <div
-                  className="text-3xl font-extrabold mb-1"
-                  style={{
-                    fontFamily: "'Bricolage Grotesque', sans-serif",
-                    color: "oklch(0.15 0.02 260)",
-                  }}
-                >
-                  {stat.value}
-                </div>
-                <div
-                  className="text-sm font-semibold"
-                  style={{ color: "oklch(0.25 0.04 260)" }}
-                >
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PLANS */}
+      {/* ── 6. Subscription Plans ── */}
       <section
         id="plans"
-        className="py-20 px-4"
-        style={{ backgroundColor: "oklch(0.97 0.01 90)" }}
+        className="py-20 px-4 bg-gradient-to-br from-purple-50 to-rose-50"
       >
         <div className="max-w-5xl mx-auto">
-          <SectionHeading
-            sub="Choose the plan that fits your family or school"
-            accentColor="oklch(0.78 0.18 75)"
-          >
-            Simple Pricing 💳
-          </SectionHeading>
-
-          <div className="grid md:grid-cols-3 gap-6 items-start">
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              💎 Choose a Plan
+            </h2>
+            <p className="text-gray-500 text-lg">
+              Find the right fit for your family or institution
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
             {PLANS.map((plan, i) => (
               <div
                 key={plan.name}
-                className={`${
-                  plan.popular
-                    ? "border-2 border-amber-400 rounded-3xl p-8 relative shadow-2xl scale-105 z-10"
-                    : "border-2 rounded-3xl p-8 relative"
-                } ${plan.color}`}
-                data-ocid={`plan.card.${i + 1}`}
+                data-ocid={`plans.item.${i + 1}`}
+                className={`relative border-2 rounded-3xl p-8 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 ${plan.color}`}
               >
-                {plan.badge && (
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2">
-                    <span
-                      className="text-sm font-extrabold px-5 py-2 rounded-full text-white shadow-lg"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, oklch(0.72 0.22 55), oklch(0.65 0.2 35))",
-                        boxShadow: "0 4px 16px oklch(0.72 0.22 55 / 0.5)",
-                      }}
-                    >
-                      {plan.badge}
-                    </span>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-sm font-bold px-5 py-1.5 rounded-full shadow">
+                    ⭐ Most Popular
                   </div>
                 )}
-                <div className="text-4xl mb-3">{plan.emoji}</div>
-                <h3
-                  className="text-xl font-extrabold mb-2"
-                  style={{
-                    fontFamily: "'Bricolage Grotesque', sans-serif",
-                    color: "oklch(0.2 0.04 260)",
-                  }}
-                >
+                <div className="text-5xl text-center mb-4">{plan.emoji}</div>
+                <h3 className="font-display font-bold text-xl text-center text-gray-800 mb-2">
                   {plan.name}
                 </h3>
                 <div className="text-center mb-6">
-                  <span
-                    className="text-4xl font-extrabold"
-                    style={{ color: "oklch(0.3 0.05 260)" }}
-                  >
+                  <span className="text-4xl font-display font-bold text-gray-900">
                     {plan.price}
                   </span>
-                  <span
-                    className="text-sm"
-                    style={{ color: "oklch(0.5 0.04 260)" }}
-                  >
-                    {plan.period}
-                  </span>
+                  <span className="text-gray-500">{plan.period}</span>
                 </div>
-                <ul className="space-y-2 mb-6">
+                <ul className="space-y-2 mb-8">
                   {plan.features.map((f) => (
-                    <li
-                      key={f}
-                      className="flex items-center gap-2 text-sm"
-                      style={{ color: "oklch(0.35 0.04 260)" }}
-                    >
-                      <CheckCircle2
-                        size={16}
-                        style={{ color: "oklch(0.6 0.15 145)" }}
-                      />{" "}
+                    <li key={f} className="text-gray-700 text-sm">
                       {f}
                     </li>
                   ))}
                 </ul>
                 <button
                   type="button"
-                  className={`${plan.btn} w-full rounded-full font-bold py-3 transition-all hover:scale-105 active:scale-95 shadow-md`}
-                  data-ocid={`plan.button.${i + 1}`}
+                  data-ocid={`plans.primary_button.${i + 1}`}
+                  className={`w-full py-3 rounded-2xl font-semibold transition-all hover:scale-105 ${plan.btnColor}`}
                 >
                   Get Started
                 </button>
@@ -1421,250 +763,434 @@ export default function App() {
         </div>
       </section>
 
-      {/* PARTNERS */}
-      <section className="py-20 px-4">
-        <div className="max-w-5xl mx-auto">
-          <SectionHeading
-            sub="Join our growing network of change-makers"
-            accentColor="oklch(0.72 0.2 155)"
-          >
-            Let's Grow Together 🤝
-          </SectionHeading>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {PARTNERS.map((p, i) => (
+      {/* ── 7. Impact ── */}
+      <section id="impact" className="py-20 px-4 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              ✨ Our Impact
+            </h2>
+            <p className="text-gray-500 text-lg">Real change, real lives</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-14">
+            {IMPACT_ITEMS.map((item) => (
               <div
-                key={p.title}
-                className={`${p.color} border rounded-3xl p-6 text-center card-bounce`}
-                data-ocid={`partner.card.${i + 1}`}
+                key={item.title}
+                className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 text-center shadow-sm hover:shadow-lg hover:scale-105 transition-all border border-purple-100"
               >
-                <div className="text-5xl mb-3">{p.emoji}</div>
-                <h3
-                  className="font-extrabold text-lg mb-2"
-                  style={{
-                    fontFamily: "'Bricolage Grotesque', sans-serif",
-                    color: "oklch(0.2 0.04 260)",
-                  }}
-                >
-                  {p.title}
+                <div className="text-6xl mb-4">{item.emoji}</div>
+                <h3 className="font-display font-bold text-gray-800 text-lg mb-2">
+                  {item.title}
                 </h3>
-                <p
-                  className="text-sm mb-4"
-                  style={{ color: "oklch(0.4 0.04 260)" }}
-                >
-                  {p.desc}
-                </p>
-                <button
-                  type="button"
-                  className="bg-white hover:bg-gray-50 rounded-full px-4 py-2 font-bold text-sm shadow-sm transition-all hover:scale-105 border border-gray-200"
-                  style={{ color: "oklch(0.3 0.05 260)" }}
-                  data-ocid={`partner.button.${i + 1}`}
-                >
-                  Partner With Us →
-                </button>
+                <p className="text-gray-500 text-sm">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          {/* Stats */}
+          <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-3xl p-10 grid grid-cols-3 gap-4 text-center text-white">
+            {[
+              { num: "500+", label: "Children Helped" },
+              { num: "50+", label: "Partner Schools" },
+              { num: "20+", label: "Therapists" },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <div className="font-display font-bold text-4xl md:text-5xl mb-1">
+                  {stat.num}
+                </div>
+                <div className="text-white/80 text-sm md:text-base">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CONTACT FORM */}
+      {/* ── 8. Founder ── */}
       <section
-        id="contact"
-        className="py-20 px-4"
-        style={{ backgroundColor: "oklch(0.97 0.01 90)" }}
+        id="founder"
+        className="py-20 px-4 bg-gradient-to-br from-violet-50 to-pink-50"
       >
-        <div className="max-w-2xl mx-auto">
-          <SectionHeading
-            sub="We'd love to hear from you"
-            accentColor="oklch(0.72 0.18 290)"
-          >
-            Say Hello! ✉️
-          </SectionHeading>
-
-          {submitted ? (
-            <div
-              className="bg-green-100 rounded-3xl p-10 text-center animate-pop-in"
-              data-ocid="contact.success_state"
-            >
-              <div className="text-6xl mb-4">🎉</div>
-              <h3
-                className="text-2xl font-extrabold mb-2"
-                style={{
-                  fontFamily: "'Bricolage Grotesque', sans-serif",
-                  color: "oklch(0.25 0.1 145)",
-                }}
-              >
-                Message Sent!
-              </h3>
-              <p style={{ color: "oklch(0.4 0.08 145)" }}>
-                We'll get back to you within 24 hours.
-              </p>
-              <button
-                type="button"
-                onClick={() => setSubmitted(false)}
-                className="mt-4 bg-green-400 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-full transition-all"
-                data-ocid="contact.secondary_button"
-              >
-                Send Another
-              </button>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              👩‍💼 Meet the Founder
+            </h2>
+          </div>
+          <div className="flex flex-col md:flex-row items-center gap-12 bg-white rounded-3xl shadow-xl p-10 md:p-16">
+            {/* Image */}
+            <div className="flex-shrink-0 flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 scale-110 blur-md opacity-60" />
+                <img
+                  src="/assets/generated/founder-shruti.dim_400x400.png"
+                  alt="Shruti More, Founder of Zindaa"
+                  className="relative z-10 w-52 h-52 rounded-full object-cover ring-4 ring-white shadow-2xl pulse-ring"
+                />
+              </div>
+              <div className="flex gap-3 mt-4">
+                <div className="bg-purple-100 text-purple-700 text-sm font-semibold px-4 py-2 rounded-full text-center">
+                  🔬 3 Years
+                  <br />
+                  Research
+                </div>
+                <div className="bg-pink-100 text-pink-700 text-sm font-semibold px-4 py-2 rounded-full text-center">
+                  🌟 500+
+                  <br />
+                  Children
+                </div>
+              </div>
             </div>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="bg-white rounded-3xl shadow-lg p-8 space-y-5 border border-amber-100"
-            >
-              <div>
-                <label
-                  htmlFor="contact-name"
-                  className="block font-bold mb-2 text-sm"
-                  style={{ color: "oklch(0.3 0.04 260)" }}
-                >
-                  Your Name 😊
-                </label>
-                <Input
-                  placeholder="Enter your name"
-                  value={contactForm.name}
-                  onChange={(e) =>
-                    setContactForm((p) => ({ ...p, name: e.target.value }))
-                  }
-                  required
-                  className="rounded-2xl h-12 text-base"
-                  id="contact-name"
-                  data-ocid="contact.input"
-                />
+            {/* Text */}
+            <div className="flex-1">
+              <h3 className="font-display font-bold text-3xl text-gray-900 mb-1">
+                Shruti More
+              </h3>
+              <div className="inline-block bg-purple-600 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
+                Founder & CEO of Zindaa
               </div>
-              <div>
-                <label
-                  htmlFor="contact-email"
-                  className="block font-bold mb-2 text-sm"
-                  style={{ color: "oklch(0.3 0.04 260)" }}
-                >
-                  Email Address 📧
-                </label>
-                <Input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={contactForm.email}
-                  onChange={(e) =>
-                    setContactForm((p) => ({ ...p, email: e.target.value }))
-                  }
-                  required
-                  className="rounded-2xl h-12 text-base"
-                  id="contact-email"
-                  data-ocid="contact.search_input"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="contact-msg"
-                  className="block font-bold mb-2 text-sm"
-                  style={{ color: "oklch(0.3 0.04 260)" }}
-                >
-                  Message 💬
-                </label>
-                <Textarea
-                  placeholder="Tell us about yourself or your organization..."
-                  value={contactForm.message}
-                  onChange={(e) =>
-                    setContactForm((p) => ({ ...p, message: e.target.value }))
-                  }
-                  required
-                  rows={5}
-                  className="rounded-2xl text-base"
-                  id="contact-msg"
-                  data-ocid="contact.textarea"
-                />
-              </div>
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full rounded-full font-bold text-base py-6"
-                style={{
-                  backgroundColor: "oklch(0.78 0.18 75)",
-                  color: "oklch(0.15 0.02 260)",
-                }}
-                data-ocid="contact.submit_button"
-              >
-                Send Message 🚀
-              </Button>
-            </form>
-          )}
+              <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                Zindaa was born from Shruti's personal mission to transform how
+                children with Down syndrome learn essential life skills.
+                Combining visual learning, interactive activities, and immersive
+                VR technology, she created a platform that makes real-world
+                independence achievable and joyful for every child.
+              </p>
+              <blockquote className="border-l-4 border-purple-400 pl-5 py-2 bg-purple-50 rounded-r-2xl">
+                <p className="text-purple-800 text-lg font-medium italic">
+                  "Every child deserves the tools to live independently,
+                  confidently, and happily."
+                </p>
+                <footer className="mt-2 text-purple-600 text-sm font-semibold">
+                  — Shruti More
+                </footer>
+              </blockquote>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer
-        className="py-12 px-4"
-        style={{
-          background:
-            "linear-gradient(135deg, oklch(0.2 0.06 260), oklch(0.15 0.08 290))",
-        }}
-      >
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-8">
-            <div>
+      {/* ── 9. VR Video Gallery ── */}
+      <section id="gallery" className="py-20 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              🎬 VR Learning Gallery
+            </h2>
+            <p className="text-gray-500 text-lg">
+              Watch how children learn through immersive VR
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {GALLERY_ITEMS.map((item, i) => (
               <div
-                className="text-3xl font-extrabold text-white mb-2"
-                style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+                key={item.title}
+                data-ocid={`gallery.item.${i + 1}`}
+                className={`${item.bg} rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-white group`}
               >
-                🌟 Zindaa
+                <div className="h-40 flex items-center justify-center relative">
+                  <span className="text-7xl">{item.emoji}</span>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                    <button
+                      type="button"
+                      data-ocid={`gallery.play_button.${i + 1}`}
+                      onClick={() => setOpenVideo(item)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-4 shadow-xl hover:scale-110"
+                      aria-label={`Play ${item.title}`}
+                    >
+                      <Play size={24} className="text-purple-700 ml-0.5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-display font-bold text-gray-800 text-sm mb-1">
+                    {item.title}
+                  </h3>
+                  <p className="text-gray-500 text-xs mb-3">{item.goal}</p>
+                  <button
+                    type="button"
+                    onClick={() => setOpenVideo(item)}
+                    className="w-full bg-white/80 hover:bg-white text-purple-700 font-semibold text-sm py-2 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                  >
+                    <Play size={14} /> Play Video
+                  </button>
+                </div>
               </div>
-              <p className="text-white/60 text-sm max-w-xs">
-                Empowering children with Down syndrome through joyful, hybrid
-                learning experiences.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              {[
-                { emoji: "📘", label: "Facebook" },
-                { emoji: "🐦", label: "Twitter" },
-                { emoji: "📸", label: "Instagram" },
-              ].map((s, i) => (
-                <button
-                  type="button"
-                  key={s.label}
-                  className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-lg transition-all hover:scale-110"
-                  aria-label={s.label}
-                  data-ocid={`footer.button.${i + 1}`}
-                >
-                  {s.emoji}
-                </button>
-              ))}
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Video Modal */}
+      <Dialog open={!!openVideo} onOpenChange={() => setOpenVideo(null)}>
+        <DialogContent className="max-w-2xl rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display flex items-center gap-3">
+              <span className="text-4xl">{openVideo?.emoji}</span>
+              <span>{openVideo?.title}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div
+            className="relative bg-gray-900 rounded-2xl overflow-hidden"
+            style={{ paddingTop: "56.25%" }}
+          >
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              <span className="text-8xl">{openVideo?.emoji}</span>
+              <div className="bg-white/20 rounded-full p-5">
+                <Play size={40} className="text-white ml-1" />
+              </div>
+              <p className="text-white/70 text-sm">VR Video Preview</p>
             </div>
           </div>
+          <p className="text-gray-600 text-center">{openVideo?.goal}</p>
+          <Button
+            onClick={() => setOpenVideo(null)}
+            className="bg-purple-600 hover:bg-purple-700 text-white rounded-2xl"
+          >
+            Close
+          </Button>
+        </DialogContent>
+      </Dialog>
 
-          <div className="border-t border-white/10 pt-6 text-center">
-            <p className="text-white/60 text-sm">
-              © {new Date().getFullYear()} Zindaa. Built with{" "}
-              <Heart size={12} className="inline text-red-400" /> using{" "}
-              <a
-                href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-amber-400 hover:text-amber-300 transition-colors"
-                data-ocid="footer.link"
-              >
-                caffeine.ai
-              </a>
+      {/* ── 10. Contact & Collaboration ── */}
+      <section
+        id="contact"
+        className="py-20 px-4 bg-gradient-to-br from-teal-50 to-blue-50"
+      >
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              🤝 Partner With Us
+            </h2>
+            <p className="text-gray-500 text-lg">
+              Join the Zindaa community and make a difference
             </p>
+          </div>
+
+          {/* Collab cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            {COLLAB_TYPES.map((ct) => (
+              <div
+                key={ct.title}
+                className="bg-white rounded-3xl p-8 text-center shadow-md hover:shadow-xl hover:scale-105 transition-all border border-teal-100"
+              >
+                <div className="text-5xl mb-4">{ct.emoji}</div>
+                <h3 className="font-display font-bold text-gray-800 mb-1">
+                  {ct.title}
+                </h3>
+                <p className="text-gray-500 text-sm">{ct.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Two-column: Get in Touch + Contact Form */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            {/* Left: Get in Touch */}
+            <div className="bg-white rounded-3xl shadow-xl p-10 flex flex-col gap-6">
+              <div>
+                <div className="inline-block bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                  👩‍💼 Founder: Shruti More
+                </div>
+                <h3 className="font-display font-bold text-2xl text-gray-800 mb-1">
+                  Get in Touch
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Reach out directly — Shruti personally reads every message.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <a
+                  href="mailto:shruti.more@example.com"
+                  data-ocid="contact.email_button.1"
+                  className="flex items-center gap-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 hover:border-purple-400 hover:scale-[1.02] transition-all rounded-2xl px-6 py-4 group"
+                >
+                  <span className="text-3xl">📧</span>
+                  <div>
+                    <div className="font-semibold text-gray-800 text-sm group-hover:text-purple-700 transition-colors">
+                      Personal Email
+                    </div>
+                    <div className="text-purple-600 text-sm font-medium">
+                      shruti.more@example.com
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="mailto:contact@zindaa.org"
+                  data-ocid="contact.email_button.2"
+                  className="flex items-center gap-4 bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-200 hover:border-teal-400 hover:scale-[1.02] transition-all rounded-2xl px-6 py-4 group"
+                >
+                  <span className="text-3xl">📬</span>
+                  <div>
+                    <div className="font-semibold text-gray-800 text-sm group-hover:text-teal-700 transition-colors">
+                      Official Project Email
+                    </div>
+                    <div className="text-teal-600 text-sm font-medium">
+                      contact@zindaa.org
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="https://www.linkedin.com/in/shrutimore"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-ocid="contact.link.1"
+                  className="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 hover:border-blue-400 hover:scale-[1.02] transition-all rounded-2xl px-6 py-4 group"
+                >
+                  <span className="text-3xl">💼</span>
+                  <div>
+                    <div className="font-semibold text-gray-800 text-sm group-hover:text-blue-700 transition-colors">
+                      LinkedIn
+                    </div>
+                    <div className="text-blue-600 text-sm font-medium">
+                      linkedin.com/in/shrutimore
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            {/* Right: Contact Form */}
+            <div className="bg-white rounded-3xl shadow-xl p-10">
+              <h3 className="font-display font-bold text-2xl text-gray-800 mb-6 text-center">
+                ✉️ Send us a message
+              </h3>
+              {submitted ? (
+                <div
+                  data-ocid="contact.success_state"
+                  className="text-center py-8"
+                >
+                  <div className="text-6xl mb-4">🎉</div>
+                  <h4 className="font-display font-bold text-xl text-gray-800 mb-2">
+                    Message Sent!
+                  </h4>
+                  <p className="text-gray-500">
+                    We'll be in touch soon. Thank you for your interest in
+                    Zindaa!
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="contact-name"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Your Name
+                    </label>
+                    <Input
+                      id="contact-name"
+                      name="name"
+                      data-ocid="contact.input"
+                      value={form.name}
+                      onChange={handleFormChange}
+                      placeholder="e.g. Sarah Johnson"
+                      required
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="contact-org"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Organization
+                    </label>
+                    <Input
+                      id="contact-org"
+                      name="org"
+                      value={form.org}
+                      onChange={handleFormChange}
+                      placeholder="e.g. Sunshine Academy"
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="contact-email"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Email Address
+                    </label>
+                    <Input
+                      id="contact-email"
+                      name="email"
+                      type="email"
+                      data-ocid="contact.input"
+                      value={form.email}
+                      onChange={handleFormChange}
+                      placeholder="you@example.com"
+                      required
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="contact-message"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Message
+                    </label>
+                    <Textarea
+                      id="contact-message"
+                      name="message"
+                      data-ocid="contact.textarea"
+                      value={form.message}
+                      onChange={handleFormChange}
+                      placeholder="Tell us how you'd like to collaborate..."
+                      rows={4}
+                      required
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    data-ocid="contact.submit_button"
+                    disabled={submitting}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-2xl py-6 text-lg font-semibold"
+                  >
+                    {submitting ? "Sending... ✨" : "Send Message 🚀"}
+                  </Button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="bg-gray-900 text-gray-400 py-12 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2 text-white font-display font-bold text-2xl">
+            <Star className="text-yellow-400" size={24} />
+            <span>Zindaa</span>
+          </div>
+          <p className="text-sm text-center">
+            © {new Date().getFullYear()}. Built with ❤️ using{" "}
+            <a
+              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-400 hover:text-purple-300 underline"
+            >
+              caffeine.ai
+            </a>
+          </p>
+          <div className="flex gap-6 text-sm">
+            {NAV_LINKS.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="hover:text-white transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
         </div>
       </footer>
-
-      {/* Floating CTA */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-40">
-        <button
-          type="button"
-          onClick={() => scrollTo("contact")}
-          className="w-14 h-14 rounded-full shadow-xl text-white font-bold text-sm flex items-center justify-center transition-all hover:scale-110"
-          style={{ backgroundColor: "oklch(0.65 0.2 75)" }}
-          data-ocid="fab.primary_button"
-          aria-label="Contact us"
-        >
-          ✉️
-        </button>
-      </div>
     </div>
   );
 }

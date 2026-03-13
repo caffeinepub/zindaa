@@ -1,35 +1,33 @@
 # Zindaa
 
 ## Current State
-Single-page React app with 10 sections: Hero, Learning Modules (5 cards), Age-Based Learning selector, VR Experience, Dashboard Preview, Impact Stats, Subscription Plans, Partners, Contact Form, and Footer. All content is on one scrollable page. Module cards have a "Start" button that does nothing.
+The site has 11 sections: hero, visual learning modules (5 cards), age-based learning selector (4 groups), VR experience highlights, parent/therapist dashboard mockup, subscription plans (3 cards), impact section, contact form connected to backend. Activity detail pages for each module exist. Previous visual design refinement pass was done.
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Activity Detail Pages** for each of the 5 learning modules (Morning Routine, School Skills, Play & Social, Shopping Practice, Road Safety). Each page should include:
-  - Large emoji/illustration header
-  - Module title and short description
-  - Step-by-step visual activity list (4-6 steps, each with emoji, step number, title, description)
-  - Skill badges earned for completing the module
-  - A "Back to Modules" button and a "Start Activity" CTA
-  - Child-friendly, colorful, accessible design matching site style
-- **Page routing** using React state (no router dependency needed — use conditional rendering with a `currentPage` state)
+- Founder section: "Meet the Founder" with Shruti More's name, backstory, motivation, and vision
+- VR Learning Video Gallery section (section 9): visual gallery with 5 modules (morning routine, kitchen learning, classroom interaction, shopping practice, road safety training), each with a video preview placeholder and short description
+- Ensure all 10 sections from the spec are present and complete
 
 ### Modify
-- Module cards' "Start" buttons should now navigate to the corresponding activity detail page
-- VR activity cards' "Try Demo" buttons should link to a VR demo page or show a coming-soon modal
-- Overall visual polish: more vivid gradients, larger emoji illustrations, smoother animations, better card hover states, improved spacing and typography hierarchy
-- Hero section: add a subtle animated gradient background and improve the illustration area
-- Section headings: increase visual weight and add decorative underline/accent
+- Hero section: large illustration of child with VR headset, title "Zindaa – Learning Life Skills Through Play", two buttons: Start Learning + Watch Demo
+- Learning modules section: ensure all 5 cards (Morning Routine, School Skills, Play & Social Skills, Shopping Practice, Road Safety) have large colorful icons and link to detail pages
+- Age-based learning: 4 groups (3–5, 6–8, 9–12, 13+) with colorful character illustrations and descriptive labels
+- VR Experience section: 5 activities with screenshot placeholders and short captions
+- Dashboard section: visual mockups of progress charts, learning reports, activity tracking; explain how parents/therapists can monitor and assign activities
+- Subscription plans: 3 cards (Free Family, School, Therapy Pro) with feature icons
+- Impact section: 4 benefit icons (independence, social skills, real-life learning, confidence)
+- Contact section: icons for schools, therapists, NGOs, researchers
+- Overall design: bright child-friendly palette, large icons, minimal text, animated transitions
 
 ### Remove
-- Nothing removed
+- Nothing to remove
 
 ## Implementation Plan
-1. Add `currentPage` state to App.tsx (`'home' | 'module-morning' | 'module-school' | 'module-play' | 'module-shopping' | 'module-road'`)
-2. Create activity data for each module: steps array with emoji, title, description; skill badges
-3. Build `ActivityPage` component rendered when a module page is active
-4. Wire module card buttons to set the page state
-5. Add "Back" button in ActivityPage to return to `'home'` and scroll to modules section
-6. Polish: improve gradients, add glow/shadow effects on cards, refine hero section, add micro-animations
-7. Validate and build
+1. Add FounderSection component with Shruti More's profile, mission text, and visual portrait placeholder
+2. Add VRVideoGallery component with 5 module cards, each showing a video preview (YouTube embed placeholder) and caption
+3. Ensure hero has correct title/buttons and an illustration image
+4. Polish all existing sections to match the visual spec (large icons, color, minimal text)
+5. Wire all sections in App.tsx in correct order: Hero → Modules → AgeSelector → VRExperience → Dashboard → Plans → Impact → Founder → VRGallery → Contact
+6. Ensure mobile responsiveness throughout

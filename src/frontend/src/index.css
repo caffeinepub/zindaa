@@ -18,196 +18,125 @@
 
 @layer base {
   :root {
-    --background: 0.99 0.005 90;
-    --foreground: 0.18 0.02 260;
-    --card: 1 0 0;
-    --card-foreground: 0.18 0.02 260;
-    --popover: 1 0 0;
-    --popover-foreground: 0.18 0.02 260;
-    --primary: 0.78 0.18 75;
-    --primary-foreground: 0.15 0.02 260;
-    --secondary: 0.88 0.12 145;
-    --secondary-foreground: 0.15 0.02 260;
-    --muted: 0.94 0.01 90;
-    --muted-foreground: 0.5 0.02 260;
-    --accent: 0.72 0.22 25;
-    --accent-foreground: 1 0 0;
-    --destructive: 0.62 0.22 25;
-    --destructive-foreground: 1 0 0;
-    --border: 0.9 0.01 90;
-    --input: 0.9 0.01 90;
-    --ring: 0.78 0.18 75;
+    --background: 98 0.01 280;
+    --foreground: 20 0.02 280;
+    --card: 100 0 0;
+    --card-foreground: 20 0.02 280;
+    --popover: 100 0 0;
+    --popover-foreground: 20 0.02 280;
+    --primary: 60 0.28 310;
+    --primary-foreground: 100 0 0;
+    --secondary: 75 0.18 200;
+    --secondary-foreground: 20 0.02 280;
+    --muted: 95 0.02 280;
+    --muted-foreground: 50 0.04 280;
+    --accent: 72 0.24 55;
+    --accent-foreground: 20 0.02 280;
+    --destructive: 55 0.22 25;
+    --destructive-foreground: 100 0 0;
+    --border: 90 0.04 280;
+    --input: 90 0.04 280;
+    --ring: 60 0.28 310;
     --radius: 1rem;
-    --chart-1: 0.78 0.18 75;
-    --chart-2: 0.72 0.22 145;
-    --chart-3: 0.65 0.2 250;
-    --chart-4: 0.72 0.22 25;
-    --chart-5: 0.75 0.15 310;
-    --sidebar: 0.97 0.01 90;
-    --sidebar-foreground: 0.18 0.02 260;
-    --sidebar-primary: 0.78 0.18 75;
-    --sidebar-primary-foreground: 0.15 0.02 260;
-    --sidebar-accent: 0.88 0.12 145;
-    --sidebar-accent-foreground: 0.15 0.02 260;
-    --sidebar-border: 0.9 0.01 90;
-    --sidebar-ring: 0.78 0.18 75;
 
-    /* Zindaa custom tokens */
-    --zindaa-yellow: 0.88 0.18 88;
-    --zindaa-coral: 0.72 0.2 30;
-    --zindaa-mint: 0.82 0.16 155;
-    --zindaa-sky: 0.75 0.14 230;
-    --zindaa-purple: 0.68 0.18 290;
-    --zindaa-dark: 0.2 0.04 260;
+    /* Zindaa custom palette */
+    --zindaa-purple: 55 0.28 305;
+    --zindaa-pink: 62 0.28 355;
+    --zindaa-orange: 72 0.22 50;
+    --zindaa-teal: 70 0.2 195;
+    --zindaa-yellow: 88 0.2 95;
+    --zindaa-coral: 68 0.24 30;
+    --zindaa-blue: 62 0.22 245;
   }
+}
 
+@layer base {
   * {
     @apply border-border;
   }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
   body {
     @apply bg-background text-foreground;
     font-family: "Figtree", "Plus Jakarta Sans", sans-serif;
   }
-
   h1,
   h2,
   h3,
-  h4,
-  h5,
-  h6 {
-    font-family: "Bricolage Grotesque", "Figtree", sans-serif;
+  h4 {
+    font-family: "Bricolage Grotesque", sans-serif;
   }
 }
 
 @layer utilities {
-  .zindaa-yellow {
-    background-color: oklch(var(--zindaa-yellow));
+  .gradient-hero {
+    background: linear-gradient(
+      135deg,
+      oklch(55 0.28 305) 0%,
+      oklch(62 0.28 355) 40%,
+      oklch(72 0.22 50) 100%
+    );
   }
-  .zindaa-coral {
-    background-color: oklch(var(--zindaa-coral));
+  .gradient-card-morning {
+    background: linear-gradient(135deg, oklch(85 0.15 200), oklch(80 0.2 220));
   }
-  .zindaa-mint {
-    background-color: oklch(var(--zindaa-mint));
+  .gradient-card-school {
+    background: linear-gradient(135deg, oklch(85 0.15 250), oklch(80 0.22 270));
   }
-  .zindaa-sky {
-    background-color: oklch(var(--zindaa-sky));
+  .gradient-card-social {
+    background: linear-gradient(135deg, oklch(85 0.15 320), oklch(80 0.22 340));
   }
-  .zindaa-purple {
-    background-color: oklch(var(--zindaa-purple));
+  .gradient-card-shopping {
+    background: linear-gradient(135deg, oklch(85 0.18 50), oklch(82 0.2 70));
   }
-
-  .text-zindaa-yellow {
-    color: oklch(var(--zindaa-yellow));
-  }
-  .text-zindaa-coral {
-    color: oklch(var(--zindaa-coral));
-  }
-  .text-zindaa-mint {
-    color: oklch(var(--zindaa-mint));
-  }
-  .text-zindaa-sky {
-    color: oklch(var(--zindaa-sky));
-  }
-  .text-zindaa-purple {
-    color: oklch(var(--zindaa-purple));
+  .gradient-card-safety {
+    background: linear-gradient(135deg, oklch(85 0.18 140), oklch(82 0.22 160));
   }
 
-  .card-bounce {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  .card-glow-purple:hover {
+    box-shadow: 0 0 30px oklch(55 0.28 305 / 0.4);
   }
-  .card-bounce:hover {
-    transform: translateY(-6px) scale(1.02);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  .card-glow-pink:hover {
+    box-shadow: 0 0 30px oklch(62 0.28 355 / 0.4);
+  }
+  .card-glow-orange:hover {
+    box-shadow: 0 0 30px oklch(72 0.22 50 / 0.4);
+  }
+  .card-glow-teal:hover {
+    box-shadow: 0 0 30px oklch(70 0.2 195 / 0.4);
+  }
+  .card-glow-yellow:hover {
+    box-shadow: 0 0 30px oklch(88 0.2 95 / 0.4);
   }
 
-  .btn-wiggle:hover {
-    animation: wiggle 0.4s ease;
+  .float-anim {
+    animation: float 3s ease-in-out infinite;
   }
-
-  @keyframes wiggle {
-    0%,
-    100% {
-      transform: rotate(0deg);
-    }
-    25% {
-      transform: rotate(-3deg);
-    }
-    75% {
-      transform: rotate(3deg);
-    }
+  .float-anim-slow {
+    animation: float 4.5s ease-in-out infinite;
+  }
+  .float-anim-fast {
+    animation: float 2.5s ease-in-out infinite;
   }
 
   @keyframes float {
     0%,
     100% {
-      transform: translateY(0px);
+      transform: translateY(0);
     }
     50% {
       transform: translateY(-12px);
     }
   }
 
-  @keyframes pop-in {
-    0% {
-      opacity: 0;
-      transform: scale(0.8) translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+  .pulse-ring {
+    animation: pulseRing 2s ease-in-out infinite;
   }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-  .animate-float-slow {
-    animation: float 5s ease-in-out infinite;
-  }
-  .animate-pop-in {
-    animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  .blob {
-    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-    animation: blob-morph 8s ease-in-out infinite;
-  }
-  @keyframes blob-morph {
+  @keyframes pulseRing {
     0%,
     100% {
-      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+      box-shadow: 0 0 0 0 oklch(62 0.28 355 / 0.4);
     }
     50% {
-      border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
-    }
-  }
-}
-
-@layer utilities {
-  @keyframes spin-slow {
-    from {
-      transform: rotate(0deg) scale(1.2);
-    }
-    to {
-      transform: rotate(360deg) scale(1.2);
-    }
-  }
-  .animate-spin-slow {
-    animation: spin-slow 15s linear infinite;
-  }
-
-  @keyframes twinkle {
-    0%,
-    100% {
-      opacity: 0.1;
-    }
-    50% {
-      opacity: 0.6;
+      box-shadow: 0 0 0 16px oklch(62 0.28 355 / 0);
     }
   }
 }
