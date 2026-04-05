@@ -8,10 +8,50 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const idlService = IDL.Service({});
+export const Badge = IDL.Record({
+  'name' : IDL.Text,
+  'description' : IDL.Text,
+  'earned' : IDL.Bool,
+});
+export const Step = IDL.Record({
+  'moduleId' : IDL.Nat,
+  'completed' : IDL.Bool,
+  'stepNumber' : IDL.Nat,
+});
+export const UserProgress = IDL.Record({
+  'badges' : IDL.Vec(Badge),
+  'steps' : IDL.Vec(Step),
+});
+
+export const idlService = IDL.Service({
+  'getBadges' : IDL.Func([], [IDL.Vec(Badge)], ['query']),
+  'getProgress' : IDL.Func([], [UserProgress], ['query']),
+  'markStepComplete' : IDL.Func([IDL.Nat, IDL.Nat], [], []),
+});
 
 export const idlInitArgs = [];
 
-export const idlFactory = ({ IDL }) => { return IDL.Service({}); };
+export const idlFactory = ({ IDL }) => {
+  const Badge = IDL.Record({
+    'name' : IDL.Text,
+    'description' : IDL.Text,
+    'earned' : IDL.Bool,
+  });
+  const Step = IDL.Record({
+    'moduleId' : IDL.Nat,
+    'completed' : IDL.Bool,
+    'stepNumber' : IDL.Nat,
+  });
+  const UserProgress = IDL.Record({
+    'badges' : IDL.Vec(Badge),
+    'steps' : IDL.Vec(Step),
+  });
+  
+  return IDL.Service({
+    'getBadges' : IDL.Func([], [IDL.Vec(Badge)], ['query']),
+    'getProgress' : IDL.Func([], [UserProgress], ['query']),
+    'markStepComplete' : IDL.Func([IDL.Nat, IDL.Nat], [], []),
+  });
+};
 
 export const init = ({ IDL }) => { return []; };

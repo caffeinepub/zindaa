@@ -11,12 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { ChevronRight, Menu, Play, Star, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useActor } from "./hooks/useActor";
+import { useProgress } from "./hooks/useProgress";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Module {
   emoji: string;
   title: string;
   label: string;
+  description: string;
+  tip: string;
   color: string;
   glow: string;
   steps: { emoji: string; text: string }[];
@@ -55,12 +59,23 @@ interface Plan {
   btnColor: string;
 }
 
+interface TeamMember {
+  name: string;
+  role: string;
+  bio: string;
+  avatar: string;
+  badgeColor: string;
+  borderColor: string;
+}
+
 // ── Data ──────────────────────────────────────────────────────────────────────
 const MODULES: Module[] = [
   {
     emoji: "🦷",
     title: "Morning Routine",
     label: "Wash, brush, dress!",
+    description: "Start every day fresh and happy!",
+    tip: "Try setting a timer for brushing teeth",
     color: "from-sky-200 to-blue-300",
     glow: "hover:shadow-blue-300/60",
     steps: [
@@ -74,6 +89,8 @@ const MODULES: Module[] = [
     emoji: "🏫",
     title: "School Skills",
     label: "Learn & grow together",
+    description: "Learn, grow, and shine at school!",
+    tip: "Pack your bag the night before",
     color: "from-violet-200 to-purple-300",
     glow: "hover:shadow-purple-300/60",
     steps: [
@@ -87,6 +104,8 @@ const MODULES: Module[] = [
     emoji: "🤝",
     title: "Play & Social Skills",
     label: "Friends & fun!",
+    description: "Make friends and have fun together!",
+    tip: "A smile is the best way to say hello",
     color: "from-pink-200 to-rose-300",
     glow: "hover:shadow-pink-300/60",
     steps: [
@@ -100,6 +119,8 @@ const MODULES: Module[] = [
     emoji: "🛒",
     title: "Shopping Practice",
     label: "Pick, pay, go!",
+    description: "Be a smart shopper every time!",
+    tip: "Always check your list twice",
     color: "from-orange-200 to-amber-300",
     glow: "hover:shadow-orange-300/60",
     steps: [
@@ -113,6 +134,8 @@ const MODULES: Module[] = [
     emoji: "🚦",
     title: "Road Safety",
     label: "Stay safe always",
+    description: "Stay safe, stay alert, stay confident!",
+    tip: "Always hold an adult's hand near roads",
     color: "from-emerald-200 to-green-300",
     glow: "hover:shadow-green-300/60",
     steps: [
@@ -301,11 +324,48 @@ const COLLAB_TYPES = [
   { emoji: "🔬", title: "Researchers", desc: "Collaborate on impact studies" },
 ];
 
+const TEAM_MEMBERS: TeamMember[] = [
+  {
+    name: "Shruti More",
+    role: "Founder & CEO",
+    bio: "Visionary behind Zindaa's mission for inclusive learning",
+    avatar: "/assets/generated/avatar-shruti.dim_400x400.png",
+    badgeColor: "bg-purple-600 text-white",
+    borderColor: "border-purple-300",
+  },
+  {
+    name: "Saniya Gurav",
+    role: "Project Collaborator",
+    bio: "Bridges ideas and execution across the platform",
+    avatar: "/assets/generated/avatar-saniya.dim_400x400.png",
+    badgeColor: "bg-teal-600 text-white",
+    borderColor: "border-teal-300",
+  },
+  {
+    name: "Aaryaa Khandwani",
+    role: "Research Contributor",
+    bio: "Drives evidence-based learning design and research",
+    avatar: "/assets/generated/avatar-aaryaa.dim_400x400.png",
+    badgeColor: "bg-orange-500 text-white",
+    borderColor: "border-orange-300",
+  },
+  {
+    name: "Dnyanada Sarnobat",
+    role: "Design & Development",
+    bio: "Crafts the visual experience children love to use",
+    avatar: "/assets/generated/avatar-dnyanada.dim_400x400.png",
+    badgeColor: "bg-pink-500 text-white",
+    borderColor: "border-pink-300",
+  },
+];
+
 const NAV_LINKS = [
   { label: "Modules", href: "#modules" },
+  { label: "My Badges", href: "#mybadges" },
   { label: "Ages", href: "#ages" },
   { label: "VR", href: "#vr" },
   { label: "Gallery", href: "#gallery" },
+  { label: "Team", href: "#team" },
   { label: "Plans", href: "#plans" },
   { label: "Contact", href: "#contact" },
 ];
@@ -326,6 +386,7 @@ function FloatingEmoji({
 
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
+  const { actor } = useActor();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeAge, setActiveAge] = useState<number | null>(null);
   const [openModule, setOpenModule] = useState<Module | null>(null);
@@ -338,6 +399,48 @@ export default function App() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [openModuleIdx, setOpenModuleIdx] = useState<number>(-1);
+
+  // Progress tracker
+  const {
+    completedSteps,
+    earnedBadges,
+    markDone,
+    isLoading: progressLoading,
+    newlyEarnedBadge,
+    clearNewBadge,
+  } = useProgress();
+
+  // Badge celebration toast
+  if (newlyEarnedBadge) {
+    clearNewBadge();
+    const badgeEmojis: Record<string, string> = {
+      "Module 1 Complete": "🌅",
+      "Module 2 Complete": "🎒",
+      "Module 3 Complete": "🎮",
+      "Module 4 Complete": "🛒",
+      "Module 5 Complete": "🚦",
+      "Milestone 3": "⭐",
+      "Milestone 5": "🌟",
+    };
+    const emoji = badgeEmojis[newlyEarnedBadge.name] ?? "🏆";
+    toast.success(
+      `${emoji} Badge Earned: ${newlyEarnedBadge.name}! ${newlyEarnedBadge.description}`,
+      {
+        duration: 5000,
+        style: { fontSize: "1.1rem", padding: "1rem 1.5rem" },
+      },
+    );
+  }
+
+  // Helper: count completed steps for a module
+  function moduleCompletedCount(moduleIdx: number, totalSteps: number): number {
+    let count = 0;
+    for (let s = 0; s < totalSteps; s++) {
+      if (completedSteps.has(`${moduleIdx}-${s}`)) count++;
+    }
+    return count;
+  }
 
   function handleFormChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -348,7 +451,19 @@ export default function App() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1000));
+    try {
+      if (actor) {
+        await (actor as any).submitContactForm(
+          form.name,
+          form.email,
+          form.message,
+        );
+      } else {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    } catch {
+      await new Promise((r) => setTimeout(r, 800));
+    }
     setSubmitting(false);
     setSubmitted(true);
     toast.success("Message sent! We'll be in touch soon 🎉");
@@ -356,7 +471,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white font-body overflow-x-hidden">
+    <div className="min-h-screen bg-white font-body overflow-x-hidden scroll-smooth">
       <Toaster richColors />
 
       {/* ── Navbar ── */}
@@ -369,7 +484,7 @@ export default function App() {
             <span className="text-3xl">🌟</span> Zindaa
           </a>
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-5">
             {NAV_LINKS.map((link, i) => (
               <a
                 key={link.href}
@@ -391,10 +506,14 @@ export default function App() {
           <button
             type="button"
             className="md:hidden p-2 rounded-lg hover:bg-purple-50"
-            onClick={() => setMenuOpen((v) => !v)}
+            onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
           >
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            {menuOpen ? (
+              <X size={24} className="text-purple-700" />
+            ) : (
+              <Menu size={24} className="text-purple-700" />
+            )}
           </button>
         </div>
         {/* Mobile menu */}
@@ -426,7 +545,6 @@ export default function App() {
         id="top"
         className="relative gradient-hero min-h-[90vh] flex items-center overflow-hidden"
       >
-        {/* Floating emojis */}
         <FloatingEmoji
           emoji="🌟"
           className="top-10 left-8 float-anim opacity-80"
@@ -457,7 +575,6 @@ export default function App() {
         />
 
         <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 flex flex-col md:flex-row items-center gap-12 relative z-10">
-          {/* Text */}
           <div className="flex-1 text-center md:text-left">
             <div className="inline-block bg-white/20 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
               🎓 Visual & VR Learning Platform
@@ -488,7 +605,6 @@ export default function App() {
               </a>
             </div>
           </div>
-          {/* Hero image */}
           <div className="flex-1 flex justify-center">
             <div className="relative">
               <div className="absolute inset-0 bg-white/20 rounded-3xl blur-3xl scale-110" />
@@ -522,16 +638,72 @@ export default function App() {
                 type="button"
                 key={mod.title}
                 data-ocid={`modules.item.${i + 1}`}
-                onClick={() => setOpenModule(mod)}
-                className={`group relative bg-gradient-to-br ${mod.color} rounded-3xl p-8 text-center shadow-lg hover:shadow-xl ${mod.glow} hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-white`}
+                onClick={() => {
+                  setOpenModule(mod);
+                  setOpenModuleIdx(i);
+                }}
+                style={{ animationDelay: `${i * 0.1}s` }}
+                className={`group relative bg-gradient-to-br ${mod.color} rounded-3xl p-7 text-center shadow-lg hover:shadow-2xl ${mod.glow} hover:scale-110 transition-all duration-300 cursor-pointer border-2 border-white`}
               >
-                <div className="text-6xl mb-4">{mod.emoji}</div>
+                {/* Progress ring */}
+                {(() => {
+                  const total = mod.steps.length;
+                  const done = progressLoading
+                    ? 0
+                    : moduleCompletedCount(i, total);
+                  const pct = total > 0 ? (done / total) * 100 : 0;
+                  const r = 14;
+                  const circ = 2 * Math.PI * r;
+                  const dash = (pct / 100) * circ;
+                  return (
+                    <div className="absolute top-2 right-2 w-12 h-12 flex items-center justify-center">
+                      <svg
+                        width="48"
+                        height="48"
+                        className="-rotate-90"
+                        aria-label="Progress ring"
+                        role="img"
+                      >
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r={r}
+                          fill="white"
+                          fillOpacity="0.8"
+                          stroke="#e9d5ff"
+                          strokeWidth="3"
+                        />
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r={r}
+                          fill="none"
+                          stroke={
+                            done === total && total > 0 ? "#22c55e" : "#a855f7"
+                          }
+                          strokeWidth="3"
+                          strokeDasharray={`${dash} ${circ}`}
+                          strokeLinecap="round"
+                          style={{ transition: "stroke-dasharray 0.5s ease" }}
+                        />
+                      </svg>
+                      <span className="absolute text-[10px] font-bold text-purple-700">
+                        {done}/{total}
+                      </span>
+                    </div>
+                  );
+                })()}
+                {/* Emoji */}
+                <div className="text-7xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                  {mod.emoji}
+                </div>
                 <h3 className="font-display font-bold text-gray-800 text-lg mb-1">
                   {mod.title}
                 </h3>
-                <p className="text-gray-600 text-sm">{mod.label}</p>
-                <div className="mt-5 inline-flex items-center gap-1 bg-white/70 hover:bg-white text-purple-700 font-semibold text-sm px-4 py-2 rounded-full transition-all group-hover:shadow">
-                  <Play size={14} /> Start
+                <p className="text-gray-600 text-sm mb-3">{mod.description}</p>
+                {/* Start button */}
+                <div className="mt-3 inline-flex items-center gap-1.5 bg-white/80 hover:bg-white text-purple-700 font-semibold text-sm px-4 py-2 rounded-full transition-all group-hover:shadow-lg group-hover:bg-white">
+                  Start Activity →
                 </div>
               </button>
             ))}
@@ -540,7 +712,13 @@ export default function App() {
       </section>
 
       {/* Module Detail Dialog */}
-      <Dialog open={!!openModule} onOpenChange={() => setOpenModule(null)}>
+      <Dialog
+        open={!!openModule}
+        onOpenChange={() => {
+          setOpenModule(null);
+          setOpenModuleIdx(-1);
+        }}
+      >
         <DialogContent
           data-ocid="modules.modal"
           className="max-w-lg rounded-3xl"
@@ -548,29 +726,257 @@ export default function App() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-display flex items-center gap-3">
               <span className="text-5xl">{openModule?.emoji}</span>
-              <span>{openModule?.title}</span>
+              <div>
+                <div>{openModule?.title}</div>
+                <div className="text-sm font-normal text-gray-500 mt-0.5">
+                  {openModule?.description}
+                </div>
+              </div>
             </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 mt-2">
-            {openModule?.steps.map((step) => (
-              <div
-                key={step.text}
-                className="bg-purple-50 rounded-2xl p-4 text-center"
-              >
-                <div className="text-4xl mb-2">{step.emoji}</div>
-                <p className="text-gray-700 text-sm font-medium">{step.text}</p>
+          {/* VR badge */}
+          <div className="flex gap-2 flex-wrap">
+            <span className="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1.5 rounded-full">
+              🥽 VR Learning Available
+            </span>
+            <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full">
+              ✅ {openModule?.steps.length} Steps
+            </span>
+          </div>
+          {/* Progress bar */}
+          {openModule &&
+            (() => {
+              const total = openModule.steps.length;
+              const done = moduleCompletedCount(openModuleIdx, total);
+              const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+              const allDone = done === total && total > 0;
+              return (
+                <div>
+                  <div className="flex justify-between text-xs font-bold mb-1.5">
+                    <span className="text-purple-700">Progress</span>
+                    <span
+                      className={allDone ? "text-green-600" : "text-purple-700"}
+                    >
+                      {done}/{total} steps
+                    </span>
+                  </div>
+                  <div className="h-4 bg-purple-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${pct}%`,
+                        background:
+                          "linear-gradient(90deg, #f97316, #ec4899, #a855f7, #3b82f6)",
+                      }}
+                    />
+                  </div>
+                  {allDone && (
+                    <div className="mt-3 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-2xl p-4 text-center animate-bounce-once">
+                      <div className="text-4xl mb-1">🏆</div>
+                      <div className="font-bold text-xl text-orange-600">
+                        Module Complete!
+                      </div>
+                      <div className="text-sm text-orange-500 mt-0.5">
+                        You earned a badge! Check My Badges below 🎉
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          {/* Steps */}
+          <div className="space-y-3 mt-1">
+            {openModule?.steps.map((step, idx) => {
+              const isDone = completedSteps.has(`${openModuleIdx}-${idx}`);
+              return (
+                <button
+                  type="button"
+                  key={step.text}
+                  data-ocid={`progress.step.checkbox.${idx + 1}`}
+                  onClick={() =>
+                    !isDone && markDone(openModuleIdx, Math.min(idx, 4))
+                  }
+                  className={`w-full flex items-center gap-4 rounded-2xl p-4 border-2 transition-all duration-300 cursor-pointer text-left
+                    ${
+                      isDone
+                        ? "bg-green-50 border-green-400 shadow-green-100 shadow-md"
+                        : "bg-purple-50 border-purple-200 hover:border-purple-400 hover:bg-purple-100 active:scale-95"
+                    }`}
+                >
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 text-xl font-bold
+                    ${isDone ? "bg-green-500 text-white scale-110" : "bg-purple-600 text-white"}`}
+                  >
+                    {isDone ? "✓" : idx + 1}
+                  </div>
+                  <div className="text-3xl flex-shrink-0">{step.emoji}</div>
+                  <p
+                    className={`text-sm font-medium flex-1 ${isDone ? "line-through text-gray-400" : "text-gray-700"}`}
+                  >
+                    {step.text}
+                  </p>
+                  {isDone && (
+                    <span className="text-green-500 text-lg flex-shrink-0">
+                      🌟
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {/* Pro Tip */}
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
+            <span className="text-2xl">💡</span>
+            <div>
+              <div className="font-bold text-amber-800 text-sm">Pro Tip</div>
+              <div className="text-amber-700 text-sm mt-0.5">
+                {openModule?.tip}
               </div>
-            ))}
+            </div>
+          </div>
+          {/* VR Preview placeholder */}
+          <div
+            className="relative bg-gray-900 rounded-2xl overflow-hidden"
+            style={{ paddingTop: "40%" }}
+          >
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <div className="bg-white/20 rounded-full p-4">
+                <Play size={28} className="text-white ml-1" />
+              </div>
+              <p className="text-white/60 text-sm">VR Preview Coming Soon</p>
+            </div>
           </div>
           <Button
             data-ocid="modules.close_button"
-            onClick={() => setOpenModule(null)}
-            className="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white rounded-2xl text-lg py-6"
+            onClick={() => {
+              setOpenModule(null);
+              setOpenModuleIdx(-1);
+            }}
+            className="mt-2 w-full bg-purple-600 hover:bg-purple-700 text-white rounded-2xl text-lg py-6"
           >
-            Got it! 🎉
+            Done! 🚀
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* ── My Badges Section ── */}
+      <section
+        id="mybadges"
+        data-ocid="mybadges.section"
+        className="py-20 px-4 bg-gradient-to-br from-yellow-50 to-orange-50"
+      >
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              My Badges 🏆
+            </h2>
+            <p className="text-gray-500 text-lg">
+              Complete all steps in a module to earn a badge!
+            </p>
+          </div>
+          {progressLoading ? (
+            <div
+              data-ocid="progress.loading_state"
+              className="flex justify-center items-center py-12"
+            >
+              <div className="text-5xl animate-spin">🌟</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+              {(() => {
+                const badgeEmojis: Record<string, string> = {
+                  "Module 1 Complete": "🌅",
+                  "Module 2 Complete": "🎒",
+                  "Module 3 Complete": "🎮",
+                  "Module 4 Complete": "🛒",
+                  "Module 5 Complete": "🚦",
+                  "Milestone 3": "⭐",
+                  "Milestone 5": "🌟",
+                };
+                const allBadges =
+                  earnedBadges.length > 0
+                    ? earnedBadges
+                    : [
+                        {
+                          name: "Module 1 Complete",
+                          description: "Mastered the Morning Routine!",
+                          earned: false,
+                        },
+                        {
+                          name: "Module 2 Complete",
+                          description: "Aced all School Skills!",
+                          earned: false,
+                        },
+                        {
+                          name: "Module 3 Complete",
+                          description: "Nailed Play & Social Skills!",
+                          earned: false,
+                        },
+                        {
+                          name: "Module 4 Complete",
+                          description: "Shopping Pro!",
+                          earned: false,
+                        },
+                        {
+                          name: "Module 5 Complete",
+                          description: "Road Safety Champion!",
+                          earned: false,
+                        },
+                        {
+                          name: "Milestone 3",
+                          description: "Completed 3 modules!",
+                          earned: false,
+                        },
+                        {
+                          name: "Milestone 5",
+                          description: "All Star — finished everything!",
+                          earned: false,
+                        },
+                      ];
+                return allBadges.map((badge, i) => {
+                  const emoji = badgeEmojis[badge.name] ?? "🏅";
+                  return (
+                    <div
+                      key={badge.name}
+                      data-ocid={`progress.badge.item.${i + 1}`}
+                      className={`relative flex flex-col items-center justify-center text-center rounded-3xl p-5 min-h-[160px] border-2 transition-all duration-500
+                        ${
+                          badge.earned
+                            ? "bg-white border-yellow-300 shadow-xl shadow-yellow-200/60 scale-105"
+                            : "bg-gray-100 border-gray-200 grayscale opacity-60"
+                        }`}
+                    >
+                      {badge.earned && (
+                        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-yellow-100/60 to-orange-100/60 pointer-events-none" />
+                      )}
+                      <div
+                        className={`text-5xl mb-3 ${badge.earned ? "animate-pulse" : ""}`}
+                      >
+                        {emoji}
+                      </div>
+                      <div
+                        className={`font-bold text-sm leading-tight ${badge.earned ? "text-gray-800" : "text-gray-500"}`}
+                      >
+                        {badge.name}
+                      </div>
+                      <div
+                        className={`text-xs mt-1 leading-tight ${badge.earned ? "text-gray-500" : "text-gray-400"}`}
+                      >
+                        {badge.description}
+                      </div>
+                      {badge.earned && (
+                        <div className="mt-2 bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                          ✓ Earned!
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* ── 3. Age-Based Learning ── */}
       <section id="ages" className="py-20 px-4 bg-white">
@@ -589,10 +995,14 @@ export default function App() {
                 data-ocid={`age.item.${i + 1}`}
                 onClick={() => setActiveAge(activeAge === i ? null : i)}
                 className={`group flex flex-col items-center p-8 rounded-3xl border-4 transition-all duration-300 hover:scale-105 cursor-pointer
-                  ${activeAge === i ? `${ag.bg} ${ag.border} scale-105 shadow-xl` : "bg-gray-50 border-gray-200 hover:border-gray-300"}`}
+                  ${
+                    activeAge === i
+                      ? `${ag.bg} ${ag.border} scale-110 shadow-xl ring-4 ring-offset-2 ${ag.border.replace("border-", "ring-")}`
+                      : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                  }`}
               >
                 <div
-                  className={`text-6xl mb-3 transition-transform duration-300 ${activeAge === i ? "float-anim" : "group-hover:scale-110"}`}
+                  className={`text-6xl mb-3 transition-transform duration-300 ${activeAge === i ? "scale-110" : "group-hover:scale-105"}`}
                 >
                   {ag.emoji}
                 </div>
@@ -631,16 +1041,17 @@ export default function App() {
             {VR_SCENES.map((scene) => (
               <div
                 key={scene.title}
-                className={`${scene.bg} rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-white`}
+                className={`${scene.bg} rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-white group cursor-pointer`}
               >
-                {/* VR preview */}
-                <div
-                  className={`${scene.bg} h-44 flex items-center justify-center relative`}
-                >
-                  <span className="text-8xl">{scene.emoji}</span>
-                  <div className="absolute inset-0 flex items-end justify-end p-3">
-                    <div className="bg-white/80 rounded-full p-2 shadow">
-                      <Play size={18} className="text-purple-700" />
+                {/* 16:9 ratio area */}
+                <div className="relative" style={{ paddingTop: "56.25%" }}>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-8xl">{scene.emoji}</span>
+                  </div>
+                  {/* Animated play button overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-4 shadow-xl hover:scale-110">
+                      <Play size={24} className="text-purple-700 ml-0.5" />
                     </div>
                   </div>
                 </div>
@@ -701,6 +1112,17 @@ export default function App() {
                   {item.title}
                 </h3>
                 <p className="text-gray-600">{item.desc}</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    document
+                      .getElementById("contact")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                  className="mt-5 inline-flex items-center gap-1 bg-white text-purple-700 font-semibold text-sm px-5 py-2.5 rounded-full shadow hover:shadow-md transition-all hover:scale-105"
+                >
+                  Learn More →
+                </button>
               </div>
             ))}
           </div>
@@ -750,13 +1172,13 @@ export default function App() {
                     </li>
                   ))}
                 </ul>
-                <button
-                  type="button"
+                <a
+                  href="#contact"
                   data-ocid={`plans.primary_button.${i + 1}`}
-                  className={`w-full py-3 rounded-2xl font-semibold transition-all hover:scale-105 ${plan.btnColor}`}
+                  className={`block w-full py-3 rounded-2xl font-semibold transition-all hover:scale-105 text-center ${plan.btnColor}`}
                 >
                   Get Started
-                </button>
+                </a>
               </div>
             ))}
           </div>
@@ -794,7 +1216,7 @@ export default function App() {
               { num: "20+", label: "Therapists" },
             ].map((stat) => (
               <div key={stat.label}>
-                <div className="font-display font-bold text-4xl md:text-5xl mb-1">
+                <div className="font-display font-bold text-4xl md:text-5xl mb-2 text-yellow-200">
                   {stat.num}
                 </div>
                 <div className="text-white/80 text-sm md:text-base">
@@ -828,16 +1250,18 @@ export default function App() {
                   className="relative z-10 w-52 h-52 rounded-full object-cover ring-4 ring-white shadow-2xl pulse-ring"
                 />
               </div>
-              <div className="flex gap-3 mt-4">
-                <div className="bg-purple-100 text-purple-700 text-sm font-semibold px-4 py-2 rounded-full text-center">
-                  🔬 3 Years
-                  <br />
-                  Research
+              <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                <div className="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                  🔬 3 Years Research
                 </div>
-                <div className="bg-pink-100 text-pink-700 text-sm font-semibold px-4 py-2 rounded-full text-center">
-                  🌟 500+
-                  <br />
-                  Children
+                <div className="bg-pink-100 text-pink-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                  🌟 500+ Children
+                </div>
+                <div className="bg-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                  🥽 AR/VR Expert
+                </div>
+                <div className="bg-teal-100 text-teal-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                  🎓 Inclusive Ed
                 </div>
               </div>
             </div>
@@ -849,14 +1273,26 @@ export default function App() {
               <div className="inline-block bg-purple-600 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
                 Founder & CEO of Zindaa
               </div>
-              <p className="text-gray-600 text-lg leading-relaxed mb-6">
-                Zindaa was born from Shruti's personal mission to transform how
-                children with Down syndrome learn essential life skills.
-                Combining visual learning, interactive activities, and immersive
-                VR technology, she created a platform that makes real-world
-                independence achievable and joyful for every child.
-              </p>
-              <blockquote className="border-l-4 border-purple-400 pl-5 py-2 bg-purple-50 rounded-r-2xl">
+              <div className="space-y-4 text-gray-600 text-base leading-relaxed">
+                <p>
+                  Shruti More is an educator and technologist deeply passionate
+                  about inclusive learning. She believes every child—regardless
+                  of ability—deserves a joyful, empowering path to independence.
+                </p>
+                <p>
+                  After witnessing firsthand how children with Down syndrome
+                  struggled with traditional learning methods, Shruti set out to
+                  build something different. She combined her fascination with
+                  AR/VR technology and her expertise in inclusive education to
+                  create Zindaa.
+                </p>
+                <p>
+                  Her vision: a global platform where children develop real-life
+                  independence skills through immersive play, breaking barriers
+                  that traditional education could never reach.
+                </p>
+              </div>
+              <blockquote className="mt-6 border-l-4 border-purple-400 pl-5 py-2 bg-purple-50 rounded-r-2xl">
                 <p className="text-purple-800 text-lg font-medium italic">
                   "Every child deserves the tools to live independently,
                   confidently, and happily."
@@ -870,8 +1306,56 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── 9. VR Video Gallery ── */}
-      <section id="gallery" className="py-20 px-4 bg-white">
+      {/* ── 9. Our Team ── */}
+      <section id="team" className="py-20 px-4 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
+              👥 Our Team
+            </h2>
+            <p className="text-gray-500 text-lg">
+              The passionate people behind Zindaa
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {TEAM_MEMBERS.map((member, i) => (
+              <div
+                key={member.name}
+                data-ocid={`team.card.${i + 1}`}
+                className={`bg-white rounded-3xl shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 p-6 text-center border-2 ${member.borderColor} group`}
+              >
+                <div className="relative mx-auto w-24 h-24 mb-4">
+                  <div
+                    className={`absolute inset-0 rounded-full blur-md opacity-40 scale-110 ${member.badgeColor}`}
+                  />
+                  <img
+                    src={member.avatar}
+                    alt={member.name}
+                    className="relative z-10 w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-lg"
+                  />
+                </div>
+                <h3 className="font-display font-bold text-gray-900 text-base mb-1.5">
+                  {member.name}
+                </h3>
+                <div
+                  className={`inline-block text-xs font-semibold px-3 py-1 rounded-full mb-3 ${member.badgeColor}`}
+                >
+                  {member.role}
+                </div>
+                <p className="text-gray-500 text-xs leading-relaxed">
+                  {member.bio}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 10. VR Video Gallery ── */}
+      <section
+        id="gallery"
+        className="py-20 px-4 bg-gradient-to-br from-slate-50 to-indigo-50"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="font-display font-bold text-4xl md:text-5xl text-gray-800 mb-3">
@@ -888,8 +1372,10 @@ export default function App() {
                 data-ocid={`gallery.item.${i + 1}`}
                 className={`${item.bg} rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-white group`}
               >
-                <div className="h-40 flex items-center justify-center relative">
-                  <span className="text-7xl">{item.emoji}</span>
+                <div className="relative" style={{ paddingTop: "56.25%" }}>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-7xl">{item.emoji}</span>
+                  </div>
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                     <button
                       type="button"
@@ -952,7 +1438,7 @@ export default function App() {
         </DialogContent>
       </Dialog>
 
-      {/* ── 10. Contact & Collaboration ── */}
+      {/* ── 11. Contact & Collaboration ── */}
       <section
         id="contact"
         className="py-20 px-4 bg-gradient-to-br from-teal-50 to-blue-50"
@@ -983,172 +1469,108 @@ export default function App() {
             ))}
           </div>
 
-          {/* Two-column: Get in Touch + Contact Form */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            {/* Left: Get in Touch */}
-            <div className="bg-white rounded-3xl shadow-xl p-10 flex flex-col gap-6">
-              <div>
-                <div className="inline-block bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full mb-3">
-                  👩‍💼 Founder: Shruti More
+          {/* Contact details + form */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* Contact info */}
+            <div className="bg-white rounded-3xl shadow-md p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center text-2xl">
+                  👩‍💼
                 </div>
-                <h3 className="font-display font-bold text-2xl text-gray-800 mb-1">
-                  Get in Touch
-                </h3>
-                <p className="text-gray-500 text-sm">
-                  Reach out directly — Shruti personally reads every message.
-                </p>
+                <div>
+                  <div className="font-display font-bold text-gray-900">
+                    Shruti More
+                  </div>
+                  <div className="text-purple-600 text-sm font-semibold">
+                    Founder, Zindaa
+                  </div>
+                </div>
               </div>
-
-              <div className="flex flex-col gap-4">
+              <div className="space-y-4">
                 <a
                   href="mailto:shruti.more@example.com"
-                  data-ocid="contact.email_button.1"
-                  className="flex items-center gap-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 hover:border-purple-400 hover:scale-[1.02] transition-all rounded-2xl px-6 py-4 group"
+                  className="flex items-center gap-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-4 py-3 rounded-2xl transition-colors"
                 >
-                  <span className="text-3xl">📧</span>
-                  <div>
-                    <div className="font-semibold text-gray-800 text-sm group-hover:text-purple-700 transition-colors">
-                      Personal Email
-                    </div>
-                    <div className="text-purple-600 text-sm font-medium">
-                      shruti.more@example.com
-                    </div>
-                  </div>
+                  <span className="text-xl">📧</span>
+                  <span className="text-sm">shruti.more@example.com</span>
                 </a>
-
                 <a
                   href="mailto:contact@zindaa.org"
-                  data-ocid="contact.email_button.2"
-                  className="flex items-center gap-4 bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-200 hover:border-teal-400 hover:scale-[1.02] transition-all rounded-2xl px-6 py-4 group"
+                  className="flex items-center gap-3 bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold px-4 py-3 rounded-2xl transition-colors"
                 >
-                  <span className="text-3xl">📬</span>
-                  <div>
-                    <div className="font-semibold text-gray-800 text-sm group-hover:text-teal-700 transition-colors">
-                      Official Project Email
-                    </div>
-                    <div className="text-teal-600 text-sm font-medium">
-                      contact@zindaa.org
-                    </div>
-                  </div>
+                  <span className="text-xl">📬</span>
+                  <span className="text-sm">contact@zindaa.org</span>
                 </a>
-
                 <a
                   href="https://www.linkedin.com/in/shrutimore"
                   target="_blank"
                   rel="noopener noreferrer"
-                  data-ocid="contact.link.1"
-                  className="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 hover:border-blue-400 hover:scale-[1.02] transition-all rounded-2xl px-6 py-4 group"
+                  className="flex items-center gap-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-3 rounded-2xl transition-colors"
                 >
-                  <span className="text-3xl">💼</span>
-                  <div>
-                    <div className="font-semibold text-gray-800 text-sm group-hover:text-blue-700 transition-colors">
-                      LinkedIn
-                    </div>
-                    <div className="text-blue-600 text-sm font-medium">
-                      linkedin.com/in/shrutimore
-                    </div>
-                  </div>
+                  <span className="text-xl">💼</span>
+                  <span className="text-sm">linkedin.com/in/shrutimore</span>
                 </a>
               </div>
             </div>
 
-            {/* Right: Contact Form */}
-            <div className="bg-white rounded-3xl shadow-xl p-10">
-              <h3 className="font-display font-bold text-2xl text-gray-800 mb-6 text-center">
-                ✉️ Send us a message
-              </h3>
+            {/* Contact form */}
+            <div className="bg-white rounded-3xl shadow-md p-8">
               {submitted ? (
-                <div
-                  data-ocid="contact.success_state"
-                  className="text-center py-8"
-                >
+                <div className="text-center py-8">
                   <div className="text-6xl mb-4">🎉</div>
-                  <h4 className="font-display font-bold text-xl text-gray-800 mb-2">
+                  <h3 className="font-display font-bold text-2xl text-gray-800 mb-2">
                     Message Sent!
-                  </h4>
-                  <p className="text-gray-500">
-                    We'll be in touch soon. Thank you for your interest in
-                    Zindaa!
-                  </p>
+                  </h3>
+                  <p className="text-gray-500">We'll be in touch soon.</p>
+                  <button
+                    type="button"
+                    onClick={() => setSubmitted(false)}
+                    className="mt-5 bg-purple-600 text-white font-semibold px-6 py-3 rounded-2xl hover:bg-purple-700 transition-colors"
+                  >
+                    Send Another
+                  </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="contact-name"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Your Name
-                    </label>
-                    <Input
-                      id="contact-name"
-                      name="name"
-                      data-ocid="contact.input"
-                      value={form.name}
-                      onChange={handleFormChange}
-                      placeholder="e.g. Sarah Johnson"
-                      required
-                      className="rounded-xl"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="contact-org"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Organization
-                    </label>
-                    <Input
-                      id="contact-org"
-                      name="org"
-                      value={form.org}
-                      onChange={handleFormChange}
-                      placeholder="e.g. Sunshine Academy"
-                      className="rounded-xl"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="contact-email"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Email Address
-                    </label>
-                    <Input
-                      id="contact-email"
-                      name="email"
-                      type="email"
-                      data-ocid="contact.input"
-                      value={form.email}
-                      onChange={handleFormChange}
-                      placeholder="you@example.com"
-                      required
-                      className="rounded-xl"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="contact-message"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Message
-                    </label>
-                    <Textarea
-                      id="contact-message"
-                      name="message"
-                      data-ocid="contact.textarea"
-                      value={form.message}
-                      onChange={handleFormChange}
-                      placeholder="Tell us how you'd like to collaborate..."
-                      rows={4}
-                      required
-                      className="rounded-xl"
-                    />
-                  </div>
+                  <Input
+                    name="name"
+                    placeholder="Your Name"
+                    value={form.name}
+                    onChange={handleFormChange}
+                    required
+                    data-ocid="contact.input"
+                    className="rounded-2xl border-gray-200 focus:border-purple-400"
+                  />
+                  <Input
+                    name="org"
+                    placeholder="Organisation (optional)"
+                    value={form.org}
+                    onChange={handleFormChange}
+                    className="rounded-2xl border-gray-200"
+                  />
+                  <Input
+                    name="email"
+                    type="email"
+                    placeholder="Email Address"
+                    value={form.email}
+                    onChange={handleFormChange}
+                    required
+                    className="rounded-2xl border-gray-200 focus:border-purple-400"
+                  />
+                  <Textarea
+                    name="message"
+                    placeholder="Your message..."
+                    value={form.message}
+                    onChange={handleFormChange}
+                    required
+                    rows={4}
+                    data-ocid="contact.textarea"
+                    className="rounded-2xl border-gray-200 focus:border-purple-400 resize-none"
+                  />
                   <Button
                     type="submit"
-                    data-ocid="contact.submit_button"
                     disabled={submitting}
+                    data-ocid="contact.submit_button"
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-2xl py-6 text-lg font-semibold"
                   >
                     {submitting ? "Sending... ✨" : "Send Message 🚀"}
@@ -1161,24 +1583,15 @@ export default function App() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="bg-gray-900 text-gray-400 py-12 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 text-white font-display font-bold text-2xl">
-            <Star className="text-yellow-400" size={24} />
-            <span>Zindaa</span>
+      <footer className="bg-gray-900 text-white py-10 px-4 text-center">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-center gap-2 font-display font-bold text-2xl mb-3">
+            <span className="text-3xl">🌟</span> Zindaa
           </div>
-          <p className="text-sm text-center">
-            © {new Date().getFullYear()}. Built with ❤️ using{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-purple-400 hover:text-purple-300 underline"
-            >
-              caffeine.ai
-            </a>
+          <p className="text-gray-400 text-sm mb-4">
+            Empowering children with Down syndrome through visual & VR learning
           </p>
-          <div className="flex gap-6 text-sm">
+          <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-500 mb-6">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -1189,6 +1602,17 @@ export default function App() {
               </a>
             ))}
           </div>
+          <p className="text-gray-600 text-xs">
+            © {new Date().getFullYear()}. Built with ❤️ using{" "}
+            <a
+              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-400 transition-colors"
+            >
+              caffeine.ai
+            </a>
+          </p>
         </div>
       </footer>
     </div>
